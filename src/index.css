@@ -21,13 +21,24 @@ body {
   @apply h-14 rounded-2xl border border-cyan/20 bg-widget text-xl font-semibold text-white transition hover:border-cyan hover:bg-cyan/10 hover:text-cyan active:scale-95 sm:h-16;
 }
 
+.monaco-editor,
+.monaco-editor .overflow-guard,
+.monaco-editor-background,
+.monaco-editor .margin {
+  background-color: #0f0021 !important;
+}
+
 .monaco-editor .bracket-match,
+.monaco-editor .view-overlays .bracket-match,
 .monaco-editor .snippet-placeholder,
-.monaco-editor .edit-placeholder {
-  border: none !important;
-  background: transparent !important;
+.monaco-editor .edit-placeholder,
+.monaco-editor .cslr.bracket-match {
+  visibility: hidden !important;
+  border: 0 !important;
   outline: none !important;
+  background: transparent !important;
   box-shadow: none !important;
+  opacity: 0 !important;
 }
 
 @media (max-width: 767px) {

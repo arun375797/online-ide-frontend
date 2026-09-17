@@ -618,6 +618,21 @@ export default function Ide() {
               onMount={(editor, monacoInstance) => {
                 editorRef.current = editor;
                 monacoInstance.editor.setTheme("jellyfish");
+                editor.updateOptions({
+                  matchBrackets: "never",
+                  selectionHighlight: false,
+                  occurrencesHighlight: "off",
+                  snippetSuggestions: "none",
+                  cursorStyle: "line",
+                  guides: {
+                    bracketPairs: false,
+                    bracketPairsHorizontal: false,
+                    highlightActiveBracketPair: false,
+                    highlightActiveIndentation: false,
+                    indentation: false,
+                  },
+                  bracketPairColorization: { enabled: false },
+                });
                 editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter, () => runRef.current());
                 editor.addCommand(monacoInstance.KeyMod.Alt | monacoInstance.KeyCode.KeyF, () => formatRef.current());
                 editor.addCommand(monacoInstance.KeyMod.Alt | monacoInstance.KeyMod.Shift | monacoInstance.KeyCode.KeyF, () => formatRef.current());
@@ -667,7 +682,8 @@ export default function Ide() {
                   bracketPairs: false,
                   bracketPairsHorizontal: false,
                   highlightActiveBracketPair: false,
-                  indentation: true,
+                  highlightActiveIndentation: false,
+                  indentation: false,
                 },
                 smoothScrolling: false,
                 links: false,
