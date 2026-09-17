@@ -493,11 +493,11 @@ export default function Ide() {
             <button type="button" className="hidden rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-cyan md:inline" onClick={() => persist(current, { toast: true })}>Save</button>
             <button
               type="button"
-              className="inline-flex h-10 items-center rounded-lg border border-cyan/20 px-3 text-sm hover:border-cyan hover:text-cyan md:h-auto md:py-2"
+              className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-cyan/20 px-3 text-sm font-semibold hover:border-cyan hover:text-cyan md:h-auto md:py-2"
               onClick={formatCurrentFile}
               title="Organize code"
             >
-              Organize
+              O
             </button>
             <button type="button" className="inline-flex h-10 items-center gap-2 rounded-lg bg-lime px-3 text-sm font-semibold text-deep md:h-auto md:py-2" onClick={runCurrentFile} title="Ctrl+Enter">
               Run
