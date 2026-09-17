@@ -168,6 +168,13 @@ const SNIPPETS = [
   },
 ];
 
+function plainInsert(text) {
+  return String(text)
+    .replace(/\$\{\d+:([^}]+)\}/g, "$1")
+    .replace(/\$\{\d+\}/g, "")
+    .replace(/\$\d+/g, "");
+}
+
 let registered = false;
 
 export function registerCompletions(monaco) {
@@ -216,10 +223,8 @@ export function registerCompletions(monaco) {
         kind: item.snippet
           ? monaco.languages.CompletionItemKind.Snippet
           : monaco.languages.CompletionItemKind.EnumMember,
-        insertText: item.insertText,
-        insertTextRules: item.snippet
-          ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
-          : undefined,
+        insertText: plainInsert(item.insertText),
+        insertTextRules: undefined,
         detail: item.detail,
         documentation: item.doc,
         filterText: item.filterText,

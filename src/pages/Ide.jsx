@@ -473,7 +473,7 @@ export default function Ide() {
                 <MenuItem label="Open File…" kbd="Ctrl+O" onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} />
                 <hr className="my-1 border-cyan/15" />
                 <MenuItem label="Save" kbd="Ctrl+S" onClick={() => { setMenuOpen(false); persist(current, { toast: true }); }} />
-                <MenuItem label="Format" kbd="Alt+F" onClick={() => { setMenuOpen(false); formatCurrentFile(); }} />
+                <MenuItem label="Organize" onClick={() => { setMenuOpen(false); formatCurrentFile(); }} />
                 <MenuItem label="Log out" onClick={() => { setMenuOpen(false); logout(); }} />
               </div>
             ) : null}
@@ -491,6 +491,14 @@ export default function Ide() {
               New notebook
             </button>
             <button type="button" className="hidden rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-cyan md:inline" onClick={() => persist(current, { toast: true })}>Save</button>
+            <button
+              type="button"
+              className="inline-flex h-10 items-center rounded-lg border border-cyan/20 px-3 text-sm hover:border-cyan hover:text-cyan md:h-auto md:py-2"
+              onClick={formatCurrentFile}
+              title="Organize code"
+            >
+              Organize
+            </button>
             <button type="button" className="inline-flex h-10 items-center gap-2 rounded-lg bg-lime px-3 text-sm font-semibold text-deep md:h-auto md:py-2" onClick={runCurrentFile} title="Ctrl+Enter">
               Run
               <span className="hidden text-[10px] font-medium opacity-70 lg:inline">Ctrl+Enter</span>
@@ -633,9 +641,23 @@ export default function Ide() {
                 quickSuggestionsDelay: 200,
                 acceptSuggestionOnEnter: "smart",
                 tabCompletion: "off",
-                snippetSuggestions: "inline",
-                wordBasedSuggestions: "currentDocument",
+                snippetSuggestions: "none",
+                wordBasedSuggestions: "off",
                 occurrencesHighlight: "off",
+                selectionHighlight: false,
+                cursorStyle: "line",
+                cursorBlinking: "smooth",
+                renderControlCharacters: false,
+                unicodeHighlight: {
+                  ambiguousCharacters: false,
+                  invisibleCharacters: false,
+                  nonBasicASCII: false,
+                },
+                inlayHints: { enabled: "off" },
+                suggest: {
+                  showSnippets: false,
+                  snippetsPreventQuickSuggestions: true,
+                },
                 renderWhitespace: "none",
                 renderValidationDecorations: "off",
                 parameterHints: { enabled: false },
