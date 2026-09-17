@@ -15,6 +15,7 @@ const MAX_LOG_ROWS = 250;
 const FONT_MIN = 10;
 const FONT_MAX = 28;
 const FONT_KEY = "myide.fontSize";
+const CHUNK_RELOAD_KEY = "myide.chunk-reload";
 
 function readFontSize(mobile) {
   try {
@@ -125,6 +126,14 @@ export default function Ide() {
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(CHUNK_RELOAD_KEY);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
