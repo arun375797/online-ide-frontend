@@ -452,7 +452,7 @@ export default function Ide() {
   return (
     <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_1fr] bg-deep text-white md:grid-cols-[min(260px,32vw)_1fr]">
       <header className="col-span-full flex flex-col border-b border-cyan/20 bg-darker pt-[env(safe-area-inset-top)]">
-        <div className="flex h-12 min-w-0 items-center gap-2 px-2 md:h-[58px] md:gap-4 md:px-4">
+        <div className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-2 py-1.5 md:min-h-[58px] md:gap-4 md:px-4">
           <button
             type="button"
             className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-cyan/20 text-lg md:hidden"
@@ -493,13 +493,13 @@ export default function Ide() {
             <button type="button" className="hidden rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-cyan md:inline" onClick={() => persist(current, { toast: true })}>Save</button>
             <button
               type="button"
-              className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-cyan/20 px-3 text-sm font-semibold hover:border-cyan hover:text-cyan md:h-auto md:py-2"
+              className="rounded-lg border border-cyan/20 px-3 py-2 text-sm font-semibold hover:border-cyan hover:text-cyan"
               onClick={formatCurrentFile}
               title="Organize code"
             >
               O
             </button>
-            <button type="button" className="inline-flex h-10 items-center gap-2 rounded-lg bg-lime px-3 text-sm font-semibold text-deep md:h-auto md:py-2" onClick={runCurrentFile} title="Ctrl+Enter">
+            <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-lime px-3 py-2 text-sm font-semibold text-deep" onClick={runCurrentFile} title="Ctrl+Enter">
               Run
               <span className="hidden text-[10px] font-medium opacity-70 lg:inline">Ctrl+Enter</span>
             </button>
@@ -597,6 +597,7 @@ export default function Ide() {
             ))}
           </div>
           <button type="button" className="m-1.5 hidden rounded border border-cyan/20 px-2 text-xs hover:border-cyan sm:inline" onClick={() => fileInputRef.current?.click()}>Open</button>
+          <button type="button" className="m-1.5 rounded border border-cyan/20 px-2 text-xs font-semibold hover:border-cyan hover:text-cyan" onClick={formatCurrentFile} title="Organize code">O</button>
           <button type="button" className="m-1.5 mr-2 h-8 w-8 rounded border border-cyan/20 hover:border-cyan" onClick={() => openModal({ mode: "file", title: "New file", copy: "This file will open in a tab.", ok: "Create", value: uniqueFileName(notebookFiles, "untitled.js") })}>+</button>
         </div>
 
