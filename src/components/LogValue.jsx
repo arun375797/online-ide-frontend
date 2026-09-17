@@ -70,13 +70,17 @@ function ArrayPreview({ node, expanded, onToggle }) {
   );
 }
 
-export function LogValue({ node }) {
+export function LogValue({ node, quoted = true }) {
   const [open, setOpen] = useState(false);
   if (!node || typeof node !== "object") return <span className="text-white">{String(node ?? "")}</span>;
 
   switch (node.t) {
     case "string":
-      return <span className="text-yellow">{quoteString(node.v)}</span>;
+      return quoted ? (
+        <span className="text-yellow">{quoteString(node.v)}</span>
+      ) : (
+        <span className="whitespace-pre text-white">{node.v}</span>
+      );
     case "number":
       return <span className="text-orange">{node.v}</span>;
     case "bigint":
@@ -159,10 +163,11 @@ export function LogLine({ row }) {
   return (
     <div className={`flex items-start gap-2 border-b border-white/5 px-1 py-[3px] font-mono text-[12px] leading-[18px] ${tone}`}>
       <KindBadge kind={row.kind} />
-      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-2 gap-y-0.5 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+      <div className="min-w-0 flex-1 overflow-x-auto whitespace-pre">
         {args.map((arg, i) => (
           <span key={i}>
-            <LogValue node={arg} />
+            {i > 0 ? " " : null}
+            <LogValue node={arg} quoted={false} />
           </span>
         ))}
       </div>

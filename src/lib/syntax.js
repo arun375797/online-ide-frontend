@@ -213,6 +213,8 @@ const operators = [
   "|=",
   "^=",
   "@",
+  "<",
+  ">",
 ];
 
 function jsLanguage() {
@@ -280,7 +282,6 @@ function jsLanguage() {
         { include: "@whitespace" },
         [/\/(?=([^\\\/]|\\.)+\/([dgimsuy]*)(\s*)(\.|;|,|\)|\]|\}|$))/, { token: "regexp", bracket: "@open", next: "@regexp" }],
         [/[{}()\[\]]/, "@brackets"],
-        [/[<>](?!@symbols)/, "@brackets"],
         [/!(?=([^=]|$))/, "operator"],
         [/@symbols/, { cases: { "@operators": "operator", "@default": "" } }],
         [/(@digits)[eE]([\-+]?(@digits))?/, "number.float"],
@@ -343,13 +344,17 @@ function jsLanguage() {
         [/'/, "string", "@pop"],
       ],
       string_backtick: [
-        [/\$\{/, { token: "delimiter.bracket", next: "@bracketCounting" }],
+        [/\$\{/, { token: "string.escape", next: "@interpolated" }],
         [/[^\\`$]+/, "string"],
         [/@escapes/, "string.escape"],
         [/\\./, "string.escape.invalid"],
         [/`/, "string", "@pop"],
       ],
-      bracketCounting: [[/\{/, "@brackets", "@bracketCounting"], [/\}/, "@brackets", "@pop"], { include: "common" }],
+      interpolated: [
+        [/\{/, "string.escape", "@interpolated"],
+        [/\}/, "string.escape", "@pop"],
+        { include: "common" },
+      ],
     },
   };
 }
