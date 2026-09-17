@@ -2,7 +2,15 @@ const TOKEN_KEY = "myide.token";
 const EXP_KEY = "myide.exp";
 
 function apiBase() {
-  return import.meta.env.VITE_API_URL || "";
+  const raw = String(import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
+  if (!raw) return "";
+  if (/\.railway\.internal(?:[:/?#]|$)/i.test(raw)) {
+    throw new Error(
+      "VITE_API_URL is a Railway private hostname. Use the public URL from Railway → Settings → Networking (https://….up.railway.app), then redeploy the client."
+    );
+  }
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
 }
 
 export async function api(path, { method = "GET", body, token } = {}) {
@@ -15,7 +23,11 @@ export async function api(path, { method = "GET", body, token } = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const error = new Error(data.error || "Request failed");
+    const fallback =
+      res.status === 405
+        ? "API URL is wrong. Set VITE_API_URL to the public Railway HTTPS URL and redeploy."
+        : "Request failed";
+    const error = new Error(data.error || fallback);
     error.status = res.status;
     throw error;
   }
