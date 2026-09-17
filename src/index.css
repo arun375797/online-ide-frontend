@@ -6,14 +6,19 @@ html,
 body,
 #root {
   height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 body {
   background: #00002c;
+  overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 .pad-btn {
-  @apply h-16 rounded-2xl border border-cyan/20 bg-widget text-xl font-semibold text-white transition hover:border-cyan hover:bg-cyan/10 hover:text-cyan active:scale-95;
+  @apply h-14 rounded-2xl border border-cyan/20 bg-widget text-xl font-semibold text-white transition hover:border-cyan hover:bg-cyan/10 hover:text-cyan active:scale-95 sm:h-16;
 }
 
 .monaco-editor,
@@ -21,4 +26,12 @@ body {
 .monaco-editor-background,
 .monaco-editor .margin {
   background-color: #0f0021 !important;
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }

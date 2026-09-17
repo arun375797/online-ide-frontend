@@ -57,8 +57,8 @@ export default function Login() {
   }, [busy]);
 
   return (
-    <div className="grid min-h-full place-items-center bg-deep px-4">
-      <div className="w-full max-w-sm rounded-3xl border border-cyan/20 bg-darker p-8 shadow-glow">
+    <div className="grid min-h-dvh place-items-center bg-deep px-4 py-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div className="w-full max-w-sm rounded-3xl border border-cyan/20 bg-darker p-5 shadow-glow sm:p-8">
         <div className="mb-6">
           <Brand size="lg" subtitle="Unlock with your PIN" />
         </div>
@@ -72,7 +72,7 @@ export default function Login() {
           ))}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {KEYS.map((key) => (
             <button
               key={key}

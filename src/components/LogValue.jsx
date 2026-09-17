@@ -159,14 +159,14 @@ export function LogLine({ row }) {
   return (
     <div className={`flex items-start gap-2 border-b border-white/5 px-1 py-[3px] font-mono text-[12px] leading-[18px] ${tone}`}>
       <KindBadge kind={row.kind} />
-      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-2 gap-y-0.5 whitespace-pre-wrap break-words">
+      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-2 gap-y-0.5 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
         {args.map((arg, i) => (
           <span key={i}>
             <LogValue node={arg} />
           </span>
         ))}
       </div>
-      {row.file ? <span className="shrink-0 pt-[1px] text-[10px] text-muted/70">{row.file}</span> : null}
+      {row.file ? <span className="hidden shrink-0 pt-[1px] text-[10px] text-muted/70 sm:inline">{row.file}</span> : null}
     </div>
   );
 }
