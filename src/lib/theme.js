@@ -1,0 +1,33 @@
+export function defineJellyfishTheme(monaco) {
+  monaco.editor.defineTheme("jellyfish", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [
+      { token: "comment", foreground: "838383", fontStyle: "italic" },
+      { token: "string", foreground: "eeff00" },
+      { token: "keyword", foreground: "ff0062" },
+      { token: "number", foreground: "ff7e34" },
+      { token: "regexp", foreground: "89DDFF" },
+      { token: "type", foreground: "F0B565" },
+      { token: "identifier", foreground: "EEFFFF" },
+      { token: "delimiter", foreground: "ffffff" },
+    ],
+    colors: {
+      "editor.background": "#0f0021",
+      "editor.foreground": "#ffffff",
+      "editorLineNumber.foreground": "#8686867c",
+      "editorLineNumber.activeForeground": "#ffffffb2",
+      "editorCursor.foreground": "#00f7ff",
+      "editor.selectionBackground": "#ff00885d",
+      "editor.inactiveSelectionBackground": "#8d8d8d62",
+      "editor.lineHighlightBackground": "#28002b",
+      "editorWidget.background": "#28002b",
+      "editorWidget.border": "#00ffff33",
+      "editorSuggestWidget.background": "#28002b",
+      "editorSuggestWidget.border": "#00ffff33",
+      "editorSuggestWidget.selectedBackground": "#00ffff33",
+      "editorSuggestWidget.highlightForeground": "#00ffff",
+      "focusBorder": "#00ffff",
+    },
+  });
+}
