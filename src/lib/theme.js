@@ -28,6 +28,10 @@ export function defineJellyfishTheme(monaco) {
       "editorSuggestWidget.selectedBackground": "#00ffff33",
       "editorSuggestWidget.highlightForeground": "#00ffff",
       "focusBorder": "#00ffff",
+      "editorBracketMatch.background": "#00000000",
+      "editorBracketMatch.border": "#00000000",
+      "editor.snippetTabstopHighlightBackground": "#00000000",
+      "editor.snippetTabstopHighlightBorder": "#00000000",
     },
   });
 }
