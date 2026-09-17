@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { registerCompletions } from "../lib/completions.js";
 import { createRunner } from "../lib/runner.js";
 import { defineJellyfishTheme } from "../lib/theme.js";
+import { formatEditor, registerFormatters } from "../lib/format.js";
 import Brand from "../components/Brand.jsx";
 import { LogLine } from "../components/LogValue.jsx";
 
@@ -74,6 +75,7 @@ export default function Ide() {
   const currentRef = useRef(null);
   const saveTimer = useRef(null);
   const runRef = useRef(() => {});
+  const formatRef = useRef(() => {});
   const modalRef = useRef(null);
   const dirtyContentRef = useRef({});
   const monacoRef = useRef(null);
@@ -131,6 +133,7 @@ export default function Ide() {
       monacoRef.current = monaco;
       defineJellyfishTheme(monaco);
       registerCompletions(monaco);
+      registerFormatters(monaco);
       monaco.editor.setTheme("jellyfish");
       setThemeReady(true);
     });
@@ -351,6 +354,26 @@ export default function Ide() {
 
   runRef.current = runCurrentFile;
 
+  async function formatCurrentFile() {
+    const file = activeFile(currentRef.current);
+    if (!file || !editorRef.current) {
+      showToast("Open a file to format.");
+      return;
+    }
+    const changed = await formatEditor(editorRef.current, languageFor(file.name));
+    if (changed) {
+      dirtyContentRef.current[file.id] = editorRef.current.getValue();
+      setSaveState("Unsaved");
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => persist(currentRef.current), 400);
+      showToast("Code organized.");
+    } else {
+      showToast("Already formatted, or the code has a syntax error.");
+    }
+  }
+
+  formatRef.current = formatCurrentFile;
+
   async function importLocalFiles(fileList) {
     if (!current || !fileList?.length) return;
     const additions = [];
@@ -395,6 +418,18 @@ export default function Ide() {
         event.preventDefault();
         openModal({ mode: "file", title: "New file", copy: "This file will open in a tab.", ok: "Create", value: "untitled.js" });
       }
+      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "f") {
+        event.preventDefault();
+        event.stopPropagation();
+        formatRef.current();
+        return;
+      }
+      if (event.altKey && event.shiftKey && key === "f") {
+        event.preventDefault();
+        event.stopPropagation();
+        formatRef.current();
+        return;
+      }
       if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
         if (modalRef.current) return;
         event.preventDefault();
@@ -438,6 +473,7 @@ export default function Ide() {
                 <MenuItem label="Open File…" kbd="Ctrl+O" onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} />
                 <hr className="my-1 border-cyan/15" />
                 <MenuItem label="Save" kbd="Ctrl+S" onClick={() => { setMenuOpen(false); persist(current, { toast: true }); }} />
+                <MenuItem label="Format" kbd="Alt+F" onClick={() => { setMenuOpen(false); formatCurrentFile(); }} />
                 <MenuItem label="Log out" onClick={() => { setMenuOpen(false); logout(); }} />
               </div>
             ) : null}
@@ -568,12 +604,15 @@ export default function Ide() {
               beforeMount={(monacoInstance) => {
                 defineJellyfishTheme(monacoInstance);
                 registerCompletions(monacoInstance);
+                registerFormatters(monacoInstance);
                 monacoInstance.editor.setTheme("jellyfish");
               }}
               onMount={(editor, monacoInstance) => {
                 editorRef.current = editor;
                 monacoInstance.editor.setTheme("jellyfish");
                 editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter, () => runRef.current());
+                editor.addCommand(monacoInstance.KeyMod.Alt | monacoInstance.KeyCode.KeyF, () => formatRef.current());
+                editor.addCommand(monacoInstance.KeyMod.Alt | monacoInstance.KeyMod.Shift | monacoInstance.KeyCode.KeyF, () => formatRef.current());
               }}
               onChange={(value) => {
                 dirtyContentRef.current[file.id] = value ?? "";
