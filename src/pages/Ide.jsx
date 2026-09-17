@@ -11,6 +11,19 @@ import { LogLine } from "../components/LogValue.jsx";
 
 const MAX_OPEN_BYTES = 1_000_000;
 const MAX_LOG_ROWS = 250;
+const FONT_MIN = 10;
+const FONT_MAX = 28;
+const FONT_KEY = "myide.fontSize";
+
+function readFontSize(mobile) {
+  try {
+    const raw = Number(localStorage.getItem(FONT_KEY));
+    if (Number.isFinite(raw) && raw >= FONT_MIN && raw <= FONT_MAX) return raw;
+  } catch {
+    /* ignore */
+  }
+  return mobile ? 13 : 14;
+}
 
 function capRows(rows, row) {
   const next = [...rows, row];
@@ -96,6 +109,7 @@ export default function Ide() {
   const [ready, setReady] = useState(false);
   const [themeReady, setThemeReady] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches);
+  const [fontSize, setFontSize] = useState(() => readFontSize(typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches));
 
   currentRef.current = current;
   modalRef.current = modal;
@@ -374,6 +388,19 @@ export default function Ide() {
 
   formatRef.current = formatCurrentFile;
 
+  function bumpFont(delta) {
+    setFontSize((n) => {
+      const next = Math.min(FONT_MAX, Math.max(FONT_MIN, n + delta));
+      try {
+        localStorage.setItem(FONT_KEY, String(next));
+      } catch {
+        /* ignore */
+      }
+      editorRef.current?.updateOptions({ fontSize: next });
+      return next;
+    });
+  }
+
   async function importLocalFiles(fileList) {
     if (!current || !fileList?.length) return;
     const additions = [];
@@ -499,6 +526,29 @@ export default function Ide() {
             >
               O
             </button>
+            <div className="inline-flex overflow-hidden rounded-lg border border-cyan/20">
+              <button
+                type="button"
+                className="px-2.5 py-2 text-sm leading-none hover:bg-cyan/10 hover:text-cyan disabled:opacity-35"
+                onClick={() => bumpFont(-1)}
+                disabled={fontSize <= FONT_MIN}
+                title="Smaller text"
+                aria-label="Decrease font size"
+              >
+                −
+              </button>
+              <span className="hidden min-w-[2rem] items-center justify-center border-x border-cyan/20 text-[11px] text-muted sm:flex">{fontSize}</span>
+              <button
+                type="button"
+                className="px-2.5 py-2 text-sm leading-none hover:bg-cyan/10 hover:text-cyan disabled:opacity-35"
+                onClick={() => bumpFont(1)}
+                disabled={fontSize >= FONT_MAX}
+                title="Larger text"
+                aria-label="Increase font size"
+              >
+                +
+              </button>
+            </div>
             <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-lime px-3 py-2 text-sm font-semibold text-deep" onClick={runCurrentFile} title="Ctrl+Enter">
               Run
               <span className="hidden text-[10px] font-medium opacity-70 lg:inline">Ctrl+Enter</span>
@@ -620,6 +670,7 @@ export default function Ide() {
                 editorRef.current = editor;
                 monacoInstance.editor.setTheme("jellyfish");
                 editor.updateOptions({
+                  fontSize,
                   matchBrackets: "never",
                   selectionHighlight: false,
                   occurrencesHighlight: "off",
@@ -646,7 +697,7 @@ export default function Ide() {
               }}
               options={{
                 fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
-                fontSize: isMobile ? 13 : 14,
+                fontSize,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 tabSize: 2,
