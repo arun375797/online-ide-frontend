@@ -362,4 +362,32 @@ export function registerJsSyntax(monaco) {
   const language = jsLanguage();
   monaco.languages.setMonarchTokensProvider("javascript", language);
   monaco.languages.setMonarchTokensProvider("typescript", { ...language, tokenPostfix: ".ts" });
+  const brackets = [
+    ["{", "}"],
+    ["[", "]"],
+    ["(", ")"],
+  ];
+  const conf = {
+    comments: { lineComment: "//", blockComment: ["/*", "*/"] },
+    brackets,
+    autoClosingPairs: [
+      { open: "{", close: "}" },
+      { open: "[", close: "]" },
+      { open: "(", close: ")" },
+      { open: '"', close: '"', notIn: ["string"] },
+      { open: "'", close: "'", notIn: ["string", "comment"] },
+      { open: "`", close: "`", notIn: ["string", "comment"] },
+    ],
+    surroundingPairs: [
+      { open: "{", close: "}" },
+      { open: "[", close: "]" },
+      { open: "(", close: ")" },
+      { open: '"', close: '"' },
+      { open: "'", close: "'" },
+      { open: "`", close: "`" },
+    ],
+    colorizedBracketPairs: brackets,
+  };
+  monaco.languages.setLanguageConfiguration("javascript", conf);
+  monaco.languages.setLanguageConfiguration("typescript", conf);
 }

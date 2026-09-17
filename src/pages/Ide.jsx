@@ -680,13 +680,13 @@ export default function Ide() {
                   snippetSuggestions: "none",
                   cursorStyle: "line",
                   guides: {
-                    bracketPairs: false,
-                    bracketPairsHorizontal: false,
-                    highlightActiveBracketPair: false,
+                    bracketPairs: true,
+                    bracketPairsHorizontal: "active",
+                    highlightActiveBracketPair: true,
                     highlightActiveIndentation: false,
                     indentation: false,
                   },
-                  bracketPairColorization: { enabled: true, independentColorPoolPerBracketType: true },
+                  bracketPairColorization: { enabled: true, independentColorPoolPerBracketType: false },
                 });
                 editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter, () => runRef.current());
                 editor.addCommand(monacoInstance.KeyMod.Alt | monacoInstance.KeyCode.KeyF, () => formatRef.current());
@@ -733,11 +733,11 @@ export default function Ide() {
                 renderValidationDecorations: "off",
                 parameterHints: { enabled: false },
                 matchBrackets: "never",
-                bracketPairColorization: { enabled: true, independentColorPoolPerBracketType: true },
+                bracketPairColorization: { enabled: true, independentColorPoolPerBracketType: false },
                 guides: {
-                  bracketPairs: false,
-                  bracketPairsHorizontal: false,
-                  highlightActiveBracketPair: false,
+                  bracketPairs: true,
+                  bracketPairsHorizontal: "active",
+                  highlightActiveBracketPair: true,
                   highlightActiveIndentation: false,
                   indentation: false,
                 },

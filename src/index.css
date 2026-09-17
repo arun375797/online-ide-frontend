@@ -41,6 +41,20 @@ body {
   opacity: 0 !important;
 }
 
+.monaco-editor .bracket-highlighting-0 { color: #ffd700 !important; }
+.monaco-editor .bracket-highlighting-1 { color: #da70d6 !important; }
+.monaco-editor .bracket-highlighting-2 { color: #179fff !important; }
+.monaco-editor .bracket-highlighting-3 { color: #00f7ff !important; }
+.monaco-editor .bracket-highlighting-4 { color: #ff7e34 !important; }
+.monaco-editor .bracket-highlighting-5 { color: #ff0062 !important; }
+
+.monaco-editor .core-guide,
+.monaco-editor .cslr[class*="bracket-highlighting"],
+.monaco-editor span[class*="bracket-highlighting"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 @media (max-width: 767px) {
   input,
   select,
