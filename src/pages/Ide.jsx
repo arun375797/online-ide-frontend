@@ -209,21 +209,29 @@ export default function Ide() {
       if (file) file.content = content;
     }
     dirtyContentRef.current = {};
-    const saved = await api(`/api/notebooks/${notebook._id}`, {
-      method: "PUT",
-      token,
-      body: {
-        name: notebook.name,
-        files,
-        openFileIds: notebook.openFileIds || [],
-        activeFileId: notebook.activeFileId,
-      },
-    });
-    currentRef.current = normalizeNotebook(saved);
-    setCurrent(currentRef.current);
-    setNotebooks((list) => [asSummary(saved), ...list.filter((n) => n._id !== saved._id)]);
-    setSaveState("Saved");
-    if (toast) showToast("Notebook saved to MongoDB.");
+    try {
+      const saved = await api(`/api/notebooks/${notebook._id}`, {
+        method: "PUT",
+        token,
+        body: {
+          name: notebook.name,
+          files,
+          openFileIds: notebook.openFileIds || [],
+          activeFileId: notebook.activeFileId,
+        },
+      });
+      const local = normalizeNotebook({ ...saved, files });
+      currentRef.current = local;
+      setNotebooks((list) => [asSummary(local), ...list.filter((n) => n._id !== local._id)]);
+      setSaveState("Saved");
+      if (toast) {
+        setCurrent(local);
+        showToast("Notebook saved to MongoDB.");
+      }
+    } catch (err) {
+      setSaveState("Unsaved");
+      if (toast) showToast(err.message || "Could not save.");
+    }
   }
 
   function openFile(fileId) {
@@ -583,12 +591,15 @@ export default function Ide() {
                 automaticLayout: true,
                 suggestOnTriggerCharacters: true,
                 quickSuggestions: { other: true, comments: false, strings: true },
-                acceptSuggestionOnEnter: "on",
-                tabCompletion: "on",
+                quickSuggestionsDelay: 200,
+                acceptSuggestionOnEnter: "smart",
+                tabCompletion: "off",
                 snippetSuggestions: "inline",
                 wordBasedSuggestions: "currentDocument",
                 occurrencesHighlight: "off",
                 renderWhitespace: "none",
+                renderValidationDecorations: "off",
+                parameterHints: { enabled: false },
                 smoothScrolling: false,
                 links: false,
                 hover: { delay: 250 },

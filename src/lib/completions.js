@@ -70,7 +70,7 @@ const SNIPPETS = [
   },
   {
     label: "fn",
-    filterText: "fn function",
+    filterText: "fn",
     insertText: "function ${1:name}(${2}) {\n  $0\n}",
     snippet: true,
     detail: "function declaration",
@@ -168,11 +168,16 @@ const SNIPPETS = [
   },
 ];
 
+let registered = false;
+
 export function registerCompletions(monaco) {
+  if (registered) return;
+  registered = true;
+
   monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.ESNext,
     allowNonTsExtensions: true,
-    checkJs: true,
+    checkJs: false,
     allowJs: true,
     noEmit: true,
     lib: ["es2022", "dom"],
@@ -180,7 +185,14 @@ export function registerCompletions(monaco) {
 
   monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: true,
-    noSyntaxValidation: false,
+    noSyntaxValidation: true,
+    noSuggestionDiagnostics: true,
+  });
+
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: true,
+    noSyntaxValidation: true,
+    noSuggestionDiagnostics: true,
   });
 
   monaco.languages.registerCompletionItemProvider("javascript", {
