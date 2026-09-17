@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { registerCompletions } from "../lib/completions.js";
 import { createRunner } from "../lib/runner.js";
 import { defineJellyfishTheme } from "../lib/theme.js";
+import { registerJsSyntax } from "../lib/syntax.js";
 import { formatEditor, registerFormatters } from "../lib/format.js";
 import Brand from "../components/Brand.jsx";
 import { LogLine } from "../components/LogValue.jsx";
@@ -146,6 +147,7 @@ export default function Ide() {
       if (cancelled) return;
       monacoRef.current = monaco;
       defineJellyfishTheme(monaco);
+      registerJsSyntax(monaco);
       registerCompletions(monaco);
       registerFormatters(monaco);
       monaco.editor.setTheme("jellyfish");
@@ -662,6 +664,7 @@ export default function Ide() {
               loading={<div className="h-full w-full bg-panel" />}
               beforeMount={(monacoInstance) => {
                 defineJellyfishTheme(monacoInstance);
+                registerJsSyntax(monacoInstance);
                 registerCompletions(monacoInstance);
                 registerFormatters(monacoInstance);
                 monacoInstance.editor.setTheme("jellyfish");
@@ -721,6 +724,7 @@ export default function Ide() {
                   nonBasicASCII: false,
                 },
                 inlayHints: { enabled: "off" },
+                "semanticHighlighting.enabled": true,
                 suggest: {
                   showSnippets: false,
                   snippetsPreventQuickSuggestions: true,
