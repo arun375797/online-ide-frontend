@@ -9,6 +9,21 @@ import Brand from "../components/Brand.jsx";
 import { LogLine } from "../components/LogValue.jsx";
 
 const MAX_OPEN_BYTES = 1_000_000;
+const MAX_LOG_ROWS = 250;
+
+function capRows(rows, row) {
+  const next = [...rows, row];
+  return next.length > MAX_LOG_ROWS ? next.slice(-MAX_LOG_ROWS) : next;
+}
+
+function asSummary(notebook) {
+  return {
+    _id: notebook._id,
+    name: notebook.name,
+    updatedAt: notebook.updatedAt,
+    fileCount: notebook.fileCount ?? notebook.files?.length ?? 0,
+  };
+}
 
 function uid() {
   return crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -43,6 +58,10 @@ export default function Ide() {
   const fileInputRef = useRef(null);
   const currentRef = useRef(null);
   const saveTimer = useRef(null);
+  const runRef = useRef(() => {});
+  const modalRef = useRef(null);
+  const dirtyContentRef = useRef({});
+  const monacoRef = useRef(null);
 
   const [notebooks, setNotebooks] = useState([]);
   const [current, setCurrent] = useState(null);
@@ -61,6 +80,7 @@ export default function Ide() {
   const [themeReady, setThemeReady] = useState(false);
 
   currentRef.current = current;
+  modalRef.current = modal;
 
   const runnerRef = useRef(null);
 
@@ -68,9 +88,9 @@ export default function Ide() {
     const instance = createRunner((msg) => {
       const row = { kind: msg.kind, args: msg.args || [], file: msg.file };
       if (msg.kind === "system") {
-        setSystem((rows) => [...rows, row]);
+        setSystem((rows) => capRows(rows, row));
       } else {
-        setOutput((rows) => [...rows, row]);
+        setOutput((rows) => capRows(rows, row));
       }
     });
     runnerRef.current = instance;
@@ -79,8 +99,10 @@ export default function Ide() {
 
   useEffect(() => {
     let cancelled = false;
+    loader.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs" } });
     loader.init().then((monaco) => {
       if (cancelled) return;
+      monacoRef.current = monaco;
       defineJellyfishTheme(monaco);
       registerCompletions(monaco);
       monaco.editor.setTheme("jellyfish");
@@ -99,11 +121,13 @@ export default function Ide() {
       if (!rows.length) {
         const created = await api("/api/notebooks", { method: "POST", token, body: { name: "Untitled notebook" } });
         if (cancelled) return;
-        setNotebooks([created]);
+        setNotebooks([asSummary(created)]);
         setCurrent(created);
       } else {
-        setNotebooks(rows);
-        setCurrent(rows[0]);
+        setNotebooks(rows.map(asSummary));
+        const full = rows[0].files ? rows[0] : await api(`/api/notebooks/${rows[0]._id}`, { token });
+        if (cancelled) return;
+        setCurrent(full);
       }
       setReady(true);
     })().catch((err) => {
@@ -130,7 +154,7 @@ export default function Ide() {
       if (!prev) return prev;
       const next = updater({ ...prev, files: prev.files.map((f) => ({ ...f })) });
       currentRef.current = next;
-      setNotebooks((list) => list.map((n) => (n._id === next._id ? next : n)).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)));
+      setNotebooks((list) => list.map((n) => (n._id === next._id ? asSummary(next) : n)));
       queueSave(next);
       return next;
     });
@@ -144,22 +168,28 @@ export default function Ide() {
 
   async function persist(notebook = currentRef.current, { toast = false } = {}) {
     if (!notebook?._id) return;
+    const files = notebook.files.map((f) => ({ ...f }));
     const editor = editorRef.current;
-    const file = notebook.files.find((f) => f.id === notebook.activeFileId);
-    if (file && editor) file.content = editor.getValue();
+    const active = files.find((f) => f.id === notebook.activeFileId);
+    if (active && editor) active.content = editor.getValue();
+    for (const [id, content] of Object.entries(dirtyContentRef.current)) {
+      const file = files.find((f) => f.id === id);
+      if (file) file.content = content;
+    }
+    dirtyContentRef.current = {};
     const saved = await api(`/api/notebooks/${notebook._id}`, {
       method: "PUT",
       token,
       body: {
         name: notebook.name,
-        files: notebook.files,
+        files,
         openFileIds: notebook.openFileIds || [],
         activeFileId: notebook.activeFileId,
       },
     });
     currentRef.current = saved;
     setCurrent(saved);
-    setNotebooks((list) => [saved, ...list.filter((n) => n._id !== saved._id)]);
+    setNotebooks((list) => [asSummary(saved), ...list.filter((n) => n._id !== saved._id)]);
     setSaveState("Saved");
     if (toast) showToast("Notebook saved to MongoDB.");
   }
@@ -187,8 +217,9 @@ export default function Ide() {
   async function switchNotebook(id) {
     if (!current || current._id === id) return;
     await persist(current);
-    const next = notebooks.find((n) => n._id === id);
-    if (next) setCurrent(next);
+    const next = await api(`/api/notebooks/${id}`, { token });
+    dirtyContentRef.current = {};
+    setCurrent(next);
     setSidebarOpen(false);
   }
 
@@ -220,8 +251,10 @@ export default function Ide() {
         const created = await api("/api/notebooks", { method: "POST", token, body: { name: "Untitled notebook" } });
         nextList = [created];
       }
-      setNotebooks(nextList);
-      setCurrent(nextList[0]);
+      setNotebooks(nextList.map(asSummary));
+      const full = nextList[0].files ? nextList[0] : await api(`/api/notebooks/${nextList[0]._id}`, { token });
+      dirtyContentRef.current = {};
+      setCurrent(full);
       return;
     }
     const value = modalValue.trim();
@@ -253,7 +286,8 @@ export default function Ide() {
       setModal(null);
       await persist(current);
       const created = await api("/api/notebooks", { method: "POST", token, body: { name: value } });
-      setNotebooks((list) => [created, ...list]);
+      dirtyContentRef.current = {};
+      setNotebooks((list) => [asSummary(created), ...list]);
       setCurrent(created);
     }
   }
@@ -262,16 +296,18 @@ export default function Ide() {
     const file = activeFile();
     if (!file) {
       showToast("Open or create a file first.");
-      setSystem((rows) => [...rows, { kind: "system", text: "Run skipped: no file is open." }]);
+        setSystem((rows) => capRows(rows, { kind: "system", text: "Run skipped: no file is open." }));
       setPanel("system");
       return;
     }
     const code = editorRef.current ? editorRef.current.getValue() : file.content;
     setOutput([]);
     setPanel("output");
-    setSystem((rows) => [...rows, { kind: "system", text: `Ran ${file.name}` }]);
+    setSystem((rows) => capRows(rows, { kind: "system", text: `Ran ${file.name}` }));
     runnerRef.current?.run(code, file.name);
   }
+
+  runRef.current = runCurrentFile;
 
   async function importLocalFiles(fileList) {
     if (!current || !fileList?.length) return;
@@ -279,7 +315,7 @@ export default function Ide() {
     for (const diskFile of fileList) {
       if (diskFile.size > MAX_OPEN_BYTES) {
         showToast(`${diskFile.name} is larger than 1 MB.`);
-        setSystem((rows) => [...rows, { kind: "system", text: `Could not open ${diskFile.name}: file is larger than 1 MB.` }]);
+        setSystem((rows) => capRows(rows, { kind: "system", text: `Could not open ${diskFile.name}: file is larger than 1 MB.` }));
         continue;
       }
       const content = await diskFile.text();
@@ -293,7 +329,7 @@ export default function Ide() {
       activeFileId: additions[additions.length - 1].id,
     }));
     additions.forEach((file) => {
-      setSystem((rows) => [...rows, { kind: "system", text: `Opened ${file.name} into this notebook.` }]);
+      setSystem((rows) => capRows(rows, { kind: "system", text: `Opened ${file.name} into this notebook.` }));
     });
   }
 
@@ -317,13 +353,15 @@ export default function Ide() {
         openModal({ mode: "file", title: "New file", copy: "This file will open in a tab.", ok: "Create", value: "untitled.js" });
       }
       if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        if (modalRef.current) return;
         event.preventDefault();
-        runCurrentFile();
+        event.stopPropagation();
+        runRef.current();
       }
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
 
   const file = activeFile();
   const openTabs = (current?.openFileIds || []).map((id) => current.files.find((f) => f.id === id)).filter(Boolean);
@@ -366,8 +404,9 @@ export default function Ide() {
             New notebook
           </button>
           <button type="button" className="rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-cyan" onClick={() => persist(current, { toast: true })}>Save</button>
-          <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-lime px-3 py-2 text-sm font-semibold text-deep" onClick={runCurrentFile}>
+          <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-lime px-3 py-2 text-sm font-semibold text-deep" onClick={runCurrentFile} title="Ctrl+Enter">
             Run
+            <span className="hidden text-[10px] font-medium opacity-70 sm:inline">Ctrl+Enter</span>
           </button>
           <button type="button" className="rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-pink hover:text-pink" onClick={logout}>
             Log out
@@ -387,7 +426,7 @@ export default function Ide() {
                 <SideItem
                   active={nb._id === current._id}
                   label={nb.name}
-                  meta={nb.files.length}
+                  meta={nb.fileCount ?? nb.files?.length ?? 0}
                   onClick={() => switchNotebook(nb._id)}
                   onDelete={() => openModal({ mode: "delete-notebook", title: "Delete notebook?", copy: `Delete “${nb.name}” and every file inside it? This cannot be undone.`, ok: "Delete", danger: true, notebookId: nb._id })}
                 />
@@ -463,12 +502,13 @@ export default function Ide() {
               onMount={(editor, monacoInstance) => {
                 editorRef.current = editor;
                 monacoInstance.editor.setTheme("jellyfish");
+                editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter, () => runRef.current());
               }}
               onChange={(value) => {
-                patchCurrent((nb) => ({
-                  ...nb,
-                  files: nb.files.map((f) => (f.id === file.id ? { ...f, content: value ?? "" } : f)),
-                }));
+                dirtyContentRef.current[file.id] = value ?? "";
+                setSaveState((state) => (state === "Unsaved" ? state : "Unsaved"));
+                clearTimeout(saveTimer.current);
+                saveTimer.current = setTimeout(() => persist(currentRef.current), 700);
               }}
               options={{
                 fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
@@ -483,7 +523,13 @@ export default function Ide() {
                 acceptSuggestionOnEnter: "on",
                 tabCompletion: "on",
                 snippetSuggestions: "inline",
-                wordBasedSuggestions: "allDocuments",
+                wordBasedSuggestions: "currentDocument",
+                occurrencesHighlight: "off",
+                renderWhitespace: "none",
+                smoothScrolling: false,
+                links: false,
+                hover: { delay: 250 },
+                largeFileOptimizations: true,
               }}
             />
           ) : file ? (
