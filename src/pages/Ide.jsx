@@ -16,6 +16,7 @@ const FONT_MIN = 10;
 const FONT_MAX = 28;
 const FONT_KEY = "myide.fontSize";
 const CHUNK_RELOAD_KEY = "myide.chunk-reload";
+const EDITOR_FONT_FAMILY = 'Consolas, "Courier New", monospace';
 
 function readFontSize(mobile) {
   try {
@@ -683,6 +684,9 @@ export default function Ide() {
                 monacoInstance.editor.setTheme("jellyfish");
                 editor.updateOptions({
                   fontSize,
+                  fontFamily: EDITOR_FONT_FAMILY,
+                  fontLigatures: false,
+                  fontVariations: false,
                   matchBrackets: "never",
                   selectionHighlight: false,
                   occurrencesHighlight: "off",
@@ -708,8 +712,10 @@ export default function Ide() {
                 saveTimer.current = setTimeout(() => persist(currentRef.current), 700);
               }}
               options={{
-                fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                fontFamily: EDITOR_FONT_FAMILY,
                 fontSize,
+                fontLigatures: false,
+                fontVariations: false,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 tabSize: 2,

@@ -18,7 +18,7 @@ export default {
       },
       fontFamily: {
         sans: ["Outfit", "Segoe UI", "sans-serif"],
-        mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
+        mono: ["Consolas", "Courier New", "monospace"],
       },
       boxShadow: {
         glow: "0 18px 50px rgba(0, 0, 44, 0.55)",
