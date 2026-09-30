@@ -15,6 +15,7 @@ const MAX_LOG_ROWS = 250;
 const FONT_MIN = 10;
 const FONT_MAX = 28;
 const FONT_KEY = "myide.fontSize";
+const RUNTIME_KEY = "myide.runtimeMode";
 const CHUNK_RELOAD_KEY = "myide.chunk-reload";
 const EDITOR_FONT_FAMILY = 'Consolas, "Courier New", monospace';
 
@@ -26,6 +27,14 @@ function readFontSize(mobile) {
     /* ignore */
   }
   return mobile ? 13 : 14;
+}
+
+function readRuntimeMode() {
+  try {
+    return localStorage.getItem(RUNTIME_KEY) === "module" ? "module" : "script";
+  } catch {
+    return "script";
+  }
 }
 
 function capRows(rows, row) {
@@ -116,6 +125,8 @@ export default function Ide() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches);
   const [fontSize, setFontSize] = useState(() => readFontSize(typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches));
   const [isRunning, setIsRunning] = useState(false);
+  const [runningFile, setRunningFile] = useState("");
+  const [runtimeMode, setRuntimeMode] = useState(readRuntimeMode);
 
   currentRef.current = current;
   modalRef.current = modal;
@@ -142,7 +153,11 @@ export default function Ide() {
 
   useEffect(() => {
     const instance = createRunner((msg) => {
-      const row = { kind: msg.kind, args: msg.args || [], text: msg.text, file: msg.file };
+      if (msg.kind === "__clear") {
+        setOutput([]);
+        return;
+      }
+      const row = { kind: msg.kind, args: msg.args || [], text: msg.text, file: msg.file, indent: msg.indent || 0 };
       if (msg.kind === "error" && msg.line && editorRef.current && monacoRef.current) {
         const model = editorRef.current.getModel();
         if (model) {
@@ -163,9 +178,10 @@ export default function Ide() {
       } else {
         setOutput((rows) => capRows(rows, row));
       }
-    }, (next) => {
+    }, (next, fileName) => {
       runningRef.current = next;
       setIsRunning(next);
+      setRunningFile(next ? fileName : "");
     });
     runnerRef.current = instance;
     return () => instance.destroy();
@@ -409,7 +425,7 @@ export default function Ide() {
     setOutput([]);
     setPanel("output");
     setSystem((rows) => capRows(rows, { kind: "system", text: `Ran ${file.name}` }));
-    runnerRef.current?.run(code, file.name);
+    runnerRef.current?.run(code, file.name, { mode: runtimeMode });
   }
 
   runRef.current = runCurrentFile;
@@ -858,16 +874,39 @@ export default function Ide() {
               window.addEventListener("pointerup", up);
             }}
           />
-          <div className="flex items-center justify-between px-3 pt-1">
-            <div className="flex gap-1">
+          <div className="flex items-center justify-between gap-2 px-3 pt-1">
+            <div className="flex min-w-0 items-center gap-1">
               <button type="button" className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${panel === "output" ? "border-b-2 border-cyan text-cyan" : "text-muted"}`} onClick={() => setPanel("output")}>Output</button>
               <button type="button" className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${panel === "system" ? "border-b-2 border-cyan text-cyan" : "text-muted"}`} onClick={() => setPanel("system")}>System</button>
+              {panel === "output" ? (
+                <span className="hidden truncate text-[10px] text-muted sm:inline" title="Shared Worker runtime; uncaught errors stop the run; DOM and Node globals are unavailable">
+                  {runtimeMode === "module" ? "ES Module" : "Worker Script"} · shared session{runningFile ? ` · running ${runningFile}` : ""}
+                </span>
+              ) : null}
             </div>
-            <button type="button" className="text-xs text-muted hover:text-white" onClick={() => (panel === "output" ? setOutput([]) : setSystem([]))}>Clear</button>
+            <div className="flex items-center gap-2">
+              {panel === "output" ? (
+                <select
+                  className="rounded border border-cyan/20 bg-widget px-1.5 py-1 text-[11px] text-white outline-none disabled:opacity-50"
+                  value={runtimeMode}
+                  disabled={isRunning}
+                  title="JavaScript runtime mode"
+                  onChange={(event) => {
+                    const next = event.target.value === "module" ? "module" : "script";
+                    setRuntimeMode(next);
+                    try { localStorage.setItem(RUNTIME_KEY, next); } catch { /* ignore */ }
+                  }}
+                >
+                  <option value="script">Worker Script</option>
+                  <option value="module">ES Module</option>
+                </select>
+              ) : null}
+              <button type="button" className="text-xs text-muted hover:text-white" onClick={() => (panel === "output" ? setOutput([]) : setSystem([]))}>Clear</button>
+            </div>
           </div>
           <div className="flex-1 overflow-auto px-3 pb-3">
             {(panel === "output" ? output : system).length === 0 ? (
-              <div className="px-1 pt-2 text-xs text-muted">{panel === "output" ? "Output from the current file will show up here." : "System messages will show up here."}</div>
+              <div className="px-1 pt-2 text-xs text-muted">{panel === "output" ? `Shared run output will appear here. Runtime: ${runtimeMode === "module" ? "ES Module" : "Worker Script"}; uncaught errors stop the run.` : "System messages will show up here."}</div>
             ) : (
               (panel === "output" ? output : system).map((row, i) => <LogLine key={i} row={row} />)
             )}
