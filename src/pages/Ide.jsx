@@ -143,6 +143,21 @@ export default function Ide() {
   useEffect(() => {
     const instance = createRunner((msg) => {
       const row = { kind: msg.kind, args: msg.args || [], text: msg.text, file: msg.file };
+      if (msg.kind === "error" && msg.line && editorRef.current && monacoRef.current) {
+        const model = editorRef.current.getModel();
+        if (model) {
+          monacoRef.current.editor.setModelMarkers(model, "myide-runner", [
+            {
+              startLineNumber: msg.line,
+              endLineNumber: msg.line,
+              startColumn: msg.column || 1,
+              endColumn: (msg.column || 1) + 1,
+              message: msg.message || "JavaScript syntax error",
+              severity: monacoRef.current.MarkerSeverity.Error,
+            },
+          ]);
+        }
+      }
       if (msg.kind === "system") {
         setSystem((rows) => capRows(rows, row));
       } else {
@@ -377,7 +392,20 @@ export default function Ide() {
       setPanel("system");
       return;
     }
+    if (!/\.(?:js|mjs|cjs)$/i.test(file.name)) {
+      setPanel("system");
+      setSystem((rows) => capRows(rows, {
+        kind: "system",
+        text: `Run skipped: ${file.name} is not a JavaScript file.`,
+      }));
+      showToast("Only JavaScript files can be run.");
+      return;
+    }
     const code = editorRef.current ? editorRef.current.getValue() : file.content;
+    const model = editorRef.current?.getModel();
+    if (model && monacoRef.current) {
+      monacoRef.current.editor.setModelMarkers(model, "myide-runner", []);
+    }
     setOutput([]);
     setPanel("output");
     setSystem((rows) => capRows(rows, { kind: "system", text: `Ran ${file.name}` }));
@@ -731,6 +759,10 @@ export default function Ide() {
                 editor.addCommand(monacoInstance.KeyMod.Alt | monacoInstance.KeyMod.Shift | monacoInstance.KeyCode.KeyF, () => formatRef.current());
               }}
               onChange={(value) => {
+                const model = editorRef.current?.getModel();
+                if (model && monacoRef.current) {
+                  monacoRef.current.editor.setModelMarkers(model, "myide-runner", []);
+                }
                 dirtyContentRef.current[file.id] = value ?? "";
                 setSaveState((state) => (state === "Unsaved" ? state : "Unsaved"));
                 clearTimeout(saveTimer.current);

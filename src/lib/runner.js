@@ -1,7 +1,23 @@
+function syntaxFailure(error, fileName) {
+  const line = Number(error?.loc?.line) || 1;
+  const column = (Number(error?.loc?.column) || 0) + 1;
+  const detail = String(error?.message || "Invalid JavaScript").replace(/\s*\(\d+:\d+\)$/, "");
+  const message = `SyntaxError: ${detail}\n    at ${fileName}:${line}:${column}`;
+  return {
+    kind: "error",
+    args: [{ t: "error", v: message }],
+    message: detail,
+    line,
+    column,
+    file: fileName,
+  };
+}
+
 export function createRunner(onMessage, onStateChange = () => {}) {
   let worker = null;
   let objectUrl = null;
   let running = false;
+  let runId = 0;
 
   function setRunning(next) {
     if (running === next) return;
@@ -22,12 +38,29 @@ export function createRunner(onMessage, onStateChange = () => {}) {
   }
 
   return {
-    run(code, fileName) {
+    async run(code, fileName) {
+      const requestId = ++runId;
       teardown();
+      try {
+        const { parse } = await import("acorn");
+        if (requestId !== runId) return false;
+        parse(code, {
+          ecmaVersion: "latest",
+          sourceType: "script",
+          allowHashBang: true,
+          locations: true,
+        });
+      } catch (error) {
+        onMessage(syntaxFailure(error, fileName));
+        return false;
+      }
+
       const encoded = JSON.stringify(code);
       const workerSource = `
 const file = ${JSON.stringify(fileName)};
+const sourceName = String(file).replace(/[\\r\\n]/g, "_");
 let evaluationFinished = false;
+let terminated = false;
 const timers = new Set();
 const intervals = new Set();
 
@@ -85,6 +118,31 @@ function inspect(value, depth, seen) {
   }
 }
 
+function sendError(error) {
+  const stack = error && error.stack ? String(error.stack) : String(error);
+  const locationLine = stack.split("\\n").find(function (line) {
+    return line.indexOf(sourceName + ":") !== -1;
+  });
+  const match = locationLine && locationLine.match(/:(\\d+):(\\d+)\\)?$/);
+  self.postMessage({
+    source: "myide-runner",
+    kind: "error",
+    args: [inspect(error)],
+    message: error && error.message ? error.message : String(error),
+    line: match ? Number(match[1]) : undefined,
+    column: match ? Number(match[2]) : undefined,
+    file: file,
+  });
+}
+
+function fail(error) {
+  if (terminated) return;
+  terminated = true;
+  sendError(error);
+  self.postMessage({ source: "myide-runner", kind: "__done", file: file });
+  self.close();
+}
+
 ["log", "info", "warn", "error", "debug"].forEach(function (kind) {
   console[kind] = function () {
     try { send(kind, Array.from(arguments).map(function (arg) { return inspect(arg); })); }
@@ -92,6 +150,34 @@ function inspect(value, depth, seen) {
   };
 });
 console.table = function (value) { send("log", [inspect(value)]); };
+console.dir = function (value) { send("log", [inspect(value)]); };
+console.assert = function (condition) {
+  if (condition) return;
+  const args = Array.prototype.slice.call(arguments, 1);
+  send("error", [inspect(args.length ? "Assertion failed: " + args.join(" ") : "Assertion failed")]);
+};
+
+const consoleTimers = new Map();
+const consoleCounts = new Map();
+console.time = function (label) { consoleTimers.set(String(label || "default"), performance.now()); };
+console.timeLog = function (label) {
+  const key = String(label || "default");
+  if (!consoleTimers.has(key)) return;
+  send("log", [inspect(key + ": " + (performance.now() - consoleTimers.get(key)).toFixed(3) + "ms")]);
+};
+console.timeEnd = function (label) {
+  const key = String(label || "default");
+  if (!consoleTimers.has(key)) return;
+  send("log", [inspect(key + ": " + (performance.now() - consoleTimers.get(key)).toFixed(3) + "ms")]);
+  consoleTimers.delete(key);
+};
+console.count = function (label) {
+  const key = String(label || "default");
+  const count = (consoleCounts.get(key) || 0) + 1;
+  consoleCounts.set(key, count);
+  send("log", [inspect(key + ": " + count)]);
+};
+console.countReset = function (label) { consoleCounts.delete(String(label || "default")); };
 
 const nativeSetTimeout = self.setTimeout.bind(self);
 const nativeClearTimeout = self.clearTimeout.bind(self);
@@ -99,6 +185,7 @@ const nativeSetInterval = self.setInterval.bind(self);
 const nativeClearInterval = self.clearInterval.bind(self);
 
 function finishIfIdle() {
+  if (terminated) return;
   if (evaluationFinished && timers.size === 0 && intervals.size === 0) {
     self.postMessage({ source: "myide-runner", kind: "__done", file: file });
     self.close();
@@ -113,7 +200,7 @@ self.setTimeout = function (callback, delay) {
     try {
       if (typeof callback === "function") callback.apply(self, args);
       else (0, eval)(String(callback));
-    } catch (error) { send("error", [inspect(error)]); }
+    } catch (error) { fail(error); }
     finally { finishIfIdle(); }
   }, delay);
   timers.add(id);
@@ -127,7 +214,7 @@ self.setInterval = function (callback, delay) {
     try {
       if (typeof callback === "function") callback.apply(self, args);
       else (0, eval)(String(callback));
-    } catch (error) { send("error", [inspect(error)]); }
+    } catch (error) { fail(error); }
   }, delay);
   intervals.add(id);
   return id;
@@ -135,17 +222,17 @@ self.setInterval = function (callback, delay) {
 self.clearInterval = function (id) { intervals.delete(id); nativeClearInterval(id); finishIfIdle(); };
 
 self.onerror = function (message, source, line, column, error) {
-  send("error", [inspect(error || String(message) + " (" + line + ":" + column + ")")]);
+  fail(error || new Error(String(message) + " (" + line + ":" + column + ")"));
   return true;
 };
-self.onunhandledrejection = function (event) { send("error", [inspect(event.reason)]); };
+self.onunhandledrejection = function (event) { fail(event.reason); };
 
 const source = ${encoded};
 (async function () {
   try {
-    const result = await (0, eval)("(async () => {\\n" + source + "\\n})()");
-    if (result !== undefined) send("result", [inspect(result)]);
-  } catch (error) { send("error", [inspect(error)]); }
+    const result = (0, eval)(source + "\\n//# sourceURL=" + sourceName);
+    if (result && typeof result.then === "function") await result;
+  } catch (error) { fail(error); return; }
   finally { evaluationFinished = true; finishIfIdle(); }
 })();
 `;
@@ -167,9 +254,11 @@ const source = ${encoded};
         teardown();
       };
       setRunning(true);
+      return true;
     },
 
     stop() {
+      runId += 1;
       if (!worker) return false;
       teardown();
       return true;
@@ -180,6 +269,7 @@ const source = ${encoded};
     },
 
     destroy() {
+      runId += 1;
       teardown();
     },
   };
