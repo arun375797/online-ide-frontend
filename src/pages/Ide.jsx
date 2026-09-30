@@ -91,6 +91,8 @@ export default function Ide() {
   const currentRef = useRef(null);
   const saveTimer = useRef(null);
   const runRef = useRef(() => {});
+  const stopRef = useRef(() => {});
+  const runningRef = useRef(false);
   const formatRef = useRef(() => {});
   const modalRef = useRef(null);
   const dirtyContentRef = useRef({});
@@ -113,6 +115,7 @@ export default function Ide() {
   const [themeReady, setThemeReady] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches);
   const [fontSize, setFontSize] = useState(() => readFontSize(typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches));
+  const [isRunning, setIsRunning] = useState(false);
 
   currentRef.current = current;
   modalRef.current = modal;
@@ -139,12 +142,15 @@ export default function Ide() {
 
   useEffect(() => {
     const instance = createRunner((msg) => {
-      const row = { kind: msg.kind, args: msg.args || [], file: msg.file };
+      const row = { kind: msg.kind, args: msg.args || [], text: msg.text, file: msg.file };
       if (msg.kind === "system") {
         setSystem((rows) => capRows(rows, row));
       } else {
         setOutput((rows) => capRows(rows, row));
       }
+    }, (next) => {
+      runningRef.current = next;
+      setIsRunning(next);
     });
     runnerRef.current = instance;
     return () => instance.destroy();
@@ -380,6 +386,14 @@ export default function Ide() {
 
   runRef.current = runCurrentFile;
 
+  function stopCurrentRun() {
+    if (!runnerRef.current?.stop()) return;
+    setPanel("output");
+    setOutput((rows) => capRows(rows, { kind: "system", text: "^C  Process stopped." }));
+  }
+
+  stopRef.current = stopCurrentRun;
+
   async function formatCurrentFile() {
     const file = activeFile(currentRef.current);
     if (!file || !editorRef.current) {
@@ -440,6 +454,12 @@ export default function Ide() {
   useEffect(() => {
     function onKey(event) {
       const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && key === "c" && runningRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        stopRef.current();
+        return;
+      }
       if (event.key === "Escape") {
         setMenuOpen(false);
         setModal(null);
@@ -561,9 +581,14 @@ export default function Ide() {
                 +
               </button>
             </div>
-            <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-lime px-3 py-2 text-sm font-semibold text-deep" onClick={runCurrentFile} title="Ctrl+Enter">
-              Run
-              <span className="hidden text-[10px] font-medium opacity-70 lg:inline">Ctrl+Enter</span>
+            <button
+              type="button"
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${isRunning ? "bg-danger text-white" : "bg-lime text-deep"}`}
+              onClick={isRunning ? stopCurrentRun : runCurrentFile}
+              title={isRunning ? "Stop (Ctrl+C)" : "Run (Ctrl+Enter)"}
+            >
+              {isRunning ? "Stop" : "Run"}
+              <span className="hidden text-[10px] font-medium opacity-70 lg:inline">{isRunning ? "Ctrl+C" : "Ctrl+Enter"}</span>
             </button>
             <button type="button" className="hidden rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-pink hover:text-pink md:inline" onClick={logout}>
               Log out
