@@ -106,6 +106,7 @@ export default function Ide() {
   const [system, setSystem] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState("");
   const [modal, setModal] = useState(null);
   const [modalValue, setModalValue] = useState("");
@@ -620,7 +621,7 @@ export default function Ide() {
   }
 
   return (
-    <div className="ide-workspace grid h-full min-h-0 grid-cols-1 grid-rows-[auto_1fr] bg-deep text-white md:grid-cols-[min(272px,30vw)_1fr]">
+    <div className={`ide-workspace grid h-full min-h-0 grid-cols-1 grid-rows-[auto_1fr] bg-deep text-white md:grid-cols-[min(272px,30vw)_1fr]${sidebarCollapsed ? " ide-workspace-sidebar-collapsed" : ""}`}>
       <header ref={headerRef} className="ide-header col-span-full flex flex-col border-b border-cyan/20 bg-darker pt-[env(safe-area-inset-top)]">
         <div className="ide-toolbar flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-2 py-1.5 md:min-h-[58px] md:gap-4 md:px-4">
           <button
@@ -747,7 +748,34 @@ export default function Ide() {
       </header>
 
       <div className="max-md:pointer-events-none max-md:col-start-1 max-md:row-start-1 max-md:h-0 max-md:w-0 max-md:overflow-visible md:contents">
-      <aside aria-label="Notebook and file explorer" className={`ide-sidebar pointer-events-auto flex h-full min-h-0 flex-col border-r border-cyan/20 bg-deep max-md:fixed max-md:bottom-0 max-md:left-0 max-md:top-[calc(env(safe-area-inset-top)+5.25rem)] max-md:z-30 max-md:w-[min(18rem,88vw)] max-md:shadow-glow max-md:transition-transform max-md:duration-200 ${sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"} pb-[env(safe-area-inset-bottom)] md:relative md:w-auto md:translate-x-0 md:shadow-none`}>
+      <aside aria-label="Notebook and file explorer" className={`ide-sidebar ${sidebarCollapsed ? "ide-sidebar-collapsed " : ""}pointer-events-auto flex h-full min-h-0 flex-col border-r border-cyan/20 bg-deep max-md:fixed max-md:bottom-0 max-md:left-0 max-md:top-[calc(env(safe-area-inset-top)+5.25rem)] max-md:z-30 max-md:w-[min(18rem,88vw)] max-md:shadow-glow max-md:transition-transform max-md:duration-200 ${sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"} pb-[env(safe-area-inset-bottom)] md:relative md:w-auto md:translate-x-0 md:shadow-none`}>
+        <div className="ide-sidebar-toolbar hidden md:flex">
+          <button
+            type="button"
+            className="ide-sidebar-toggle"
+            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            title={sidebarCollapsed ? "Maximize sidebar" : "Minimize sidebar"}
+            aria-label={sidebarCollapsed ? "Maximize sidebar" : "Minimize sidebar"}
+            aria-expanded={!sidebarCollapsed}
+            aria-controls="ide-explorer-panel"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M9 4v16m5-11-3 3 3 3" className={sidebarCollapsed ? "ide-sidebar-toggle-chevron-collapsed" : ""} />
+            </svg>
+          </button>
+        </div>
+        <div id="ide-explorer-panel" className="ide-explorer-panel">
         <ExplorerSidebar
           notebooks={notebooks}
           current={current}
@@ -761,6 +789,7 @@ export default function Ide() {
           onRenameNotebook={(notebook) => openModal({ mode: "rename-notebook", title: "Rename notebook", copy: "Choose a new name for this notebook.", ok: "Rename", value: notebook.name, notebookId: notebook._id })}
           onRenameFile={(item) => openModal({ mode: "rename", title: "Rename file", copy: "The file stays open; only the name changes.", ok: "Rename", value: item.name, fileId: item.id })}
         />
+        </div>
       </aside>
       </div>
 

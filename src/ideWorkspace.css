@@ -119,6 +119,35 @@
   background: #080c22;
   border-color: #ffffff0e;
 }
+.ide-sidebar-toolbar {
+  min-height: 36px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 8px 0;
+}
+.ide-sidebar-toggle {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #91a5bf;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.ide-sidebar-toggle:hover {
+  background: #ffffff08;
+  border-color: #66799535;
+  color: #bdedf3;
+}
+.ide-sidebar-toggle:focus-visible {
+  outline: 2px solid #68cbd8;
+  outline-offset: -2px;
+}
+.ide-sidebar-toggle-chevron-collapsed {
+  transform: rotate(180deg);
+  transform-origin: 12px 12px;
+}
 .ide-explorer {
   display: flex;
   flex: 1;
@@ -379,6 +408,16 @@
 @media (min-width: 768px) {
   .ide-header-actions > button.hidden {
     display: inline-flex;
+  }
+  .ide-workspace-sidebar-collapsed {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .ide-sidebar.ide-sidebar-collapsed .ide-sidebar-toolbar {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .ide-sidebar.ide-sidebar-collapsed .ide-explorer-panel {
+    display: none;
   }
 }
 @media (min-width: 768px) and (max-width: 1199px) {
