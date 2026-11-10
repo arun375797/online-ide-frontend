@@ -37,6 +37,8 @@ const Ide = lazy(() =>
   })
 );
 
+const Visualizer = lazy(() => import("./pages/Visualizer.jsx"));
+
 function bootIde() {
   return import("./pages/Ide.jsx").catch(() => {});
 }
@@ -112,7 +114,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <Suspense fallback={<div className="grid h-full place-items-center bg-deep text-muted">Loading IDE…</div>}>
-        <Ide />
+        {window.location.pathname.replace(/\/+$/, "") === "/visualizer" ? <Visualizer /> : <Ide />}
       </Suspense>
     </ErrorBoundary>
   );

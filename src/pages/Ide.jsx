@@ -8,7 +8,11 @@ import { defineJellyfishTheme } from "../lib/theme.js";
 import { registerJsSyntax } from "../lib/syntax.js";
 import { formatEditor, registerFormatters } from "../lib/format.js";
 import Brand from "../components/Brand.jsx";
+import VisualizerBrand from "../components/VisualizerBrand.jsx";
 import { LogLine } from "../components/LogValue.jsx";
+import ExplorerSidebar, { ExplorerIcon } from "../components/ExplorerSidebar.jsx";
+import { uniqueFileName, renameNotebookFile } from "../lib/notebookFiles.js";
+import "../ideWorkspace.css";
 
 const MAX_OPEN_BYTES = 1_000_000;
 const MAX_LOG_ROWS = 250;
@@ -78,24 +82,10 @@ function languageFor(name) {
   return "javascript";
 }
 
-function uniqueFileName(files, name, exceptId = null) {
-  const list = Array.isArray(files) ? files : [];
-  const base = name.trim() || "untitled.js";
-  const hasExt = /\.[A-Za-z0-9]+$/.test(base);
-  const fileName = hasExt ? base : `${base}.js`;
-  const taken = new Set(list.filter((f) => f.id !== exceptId).map((f) => f.name.toLowerCase()));
-  if (!taken.has(fileName.toLowerCase())) return fileName;
-  const match = fileName.match(/^(.*?)(\.[A-Za-z0-9]+)$/);
-  const stem = match ? match[1] : fileName;
-  const ext = match ? match[2] : "";
-  let i = 2;
-  while (taken.has(`${stem}-${i}${ext}`.toLowerCase())) i += 1;
-  return `${stem}-${i}${ext}`;
-}
-
 export default function Ide() {
   const { token, logout } = useAuth();
   const editorRef = useRef(null);
+  const headerRef = useRef(null);
   const fileInputRef = useRef(null);
   const currentRef = useRef(null);
   const saveTimer = useRef(null);
@@ -104,6 +94,7 @@ export default function Ide() {
   const runningRef = useRef(false);
   const formatRef = useRef(() => {});
   const modalRef = useRef(null);
+  const modalBusyRef = useRef(false);
   const dirtyContentRef = useRef({});
   const monacoRef = useRef(null);
 
@@ -119,6 +110,7 @@ export default function Ide() {
   const [modal, setModal] = useState(null);
   const [modalValue, setModalValue] = useState("");
   const [modalError, setModalError] = useState("");
+  const [modalBusy, setModalBusy] = useState(false);
   const [consoleHeight, setConsoleHeight] = useState(() => (typeof window !== "undefined" && window.innerWidth < 768 ? 128 : 220));
   const [ready, setReady] = useState(false);
   const [themeReady, setThemeReady] = useState(false);
@@ -130,6 +122,17 @@ export default function Ide() {
 
   currentRef.current = current;
   modalRef.current = modal;
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return undefined;
+    const updateHeight = () => header.parentElement.style.setProperty("--ide-header-height", `${header.getBoundingClientRect().bottom}px`);
+    updateHeight();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateHeight) : null;
+    observer?.observe(header);
+    window.addEventListener("resize", updateHeight);
+    return () => { observer?.disconnect(); window.removeEventListener("resize", updateHeight); };
+  }, [ready]);
 
   const runnerRef = useRef(null);
 
@@ -265,16 +268,16 @@ export default function Ide() {
   }
 
   async function persist(notebook = currentRef.current, { toast = false } = {}) {
-    if (!notebook?._id) return;
+    if (!notebook?._id) return false;
     const files = filesOf(notebook).map((f) => ({ ...f }));
     const editor = editorRef.current;
     const active = files.find((f) => f.id === notebook.activeFileId);
     if (active && editor) active.content = editor.getValue();
-    for (const [id, content] of Object.entries(dirtyContentRef.current)) {
+    const dirtySnapshot = { ...dirtyContentRef.current };
+    for (const [id, content] of Object.entries(dirtySnapshot)) {
       const file = files.find((f) => f.id === id);
       if (file) file.content = content;
     }
-    dirtyContentRef.current = {};
     try {
       const saved = await api(`/api/notebooks/${notebook._id}`, {
         method: "PUT",
@@ -286,6 +289,11 @@ export default function Ide() {
           activeFileId: notebook.activeFileId,
         },
       });
+      const remainingDirty = { ...dirtyContentRef.current };
+      for (const [id, content] of Object.entries(dirtySnapshot)) {
+        if (remainingDirty[id] === content) delete remainingDirty[id];
+      }
+      dirtyContentRef.current = remainingDirty;
       const local = normalizeNotebook({ ...saved, files });
       currentRef.current = local;
       setNotebooks((list) => [asSummary(local), ...list.filter((n) => n._id !== local._id)]);
@@ -294,9 +302,11 @@ export default function Ide() {
         setCurrent(local);
         showToast("Notebook saved to MongoDB.");
       }
+      return true;
     } catch (err) {
       setSaveState("Unsaved");
       if (toast) showToast(err.message || "Could not save.");
+      return false;
     }
   }
 
@@ -330,13 +340,14 @@ export default function Ide() {
   }
 
   function openModal(next) {
+    if (modalBusyRef.current) return;
     setModalError("");
     setModalValue(next.value || "");
     setModal(next);
   }
 
   async function confirmModal() {
-    if (!modal) return;
+    if (!modal || modalBusyRef.current) return;
     if (modal.mode === "delete-file") {
       const id = modal.fileId;
       setModal(null);
@@ -383,11 +394,36 @@ export default function Ide() {
       return;
     }
     if (modal.mode === "rename") {
+      const snapshot = { ...dirtyContentRef.current };
+      const active = currentRef.current?.activeFileId;
+      if (active && editorRef.current) snapshot[active] = editorRef.current.getValue();
+      if (!filesOf(currentRef.current).some((file) => file.id === modal.fileId)) {
+        setModalError("This file no longer exists.");
+        return;
+      }
       setModal(null);
-      patchCurrent((nb) => ({
-        ...nb,
-        files: filesOf(nb).map((f) => (f.id === modal.fileId ? { ...f, name: uniqueFileName(filesOf(nb), value, f.id) } : f)),
-      }));
+      patchCurrent((nb) => renameNotebookFile(nb, modal.fileId, value, snapshot));
+      return;
+    }
+    if (modal.mode === "rename-notebook") {
+      if (currentRef.current?._id === modal.notebookId) {
+        patchCurrent((nb) => ({ ...nb, name: value }));
+        setModal(null);
+        return;
+      }
+      modalBusyRef.current = true;
+      setModalBusy(true);
+      try {
+        const renamed = await api(`/api/notebooks/${modal.notebookId}`, { method: "PUT", token, body: { name: value } });
+        setNotebooks((list) => list.map((notebook) => notebook._id === modal.notebookId ? { ...notebook, name: renamed.name, updatedAt: renamed.updatedAt } : notebook));
+        setModal(null);
+      } catch (error) {
+        if (error.status === 401) logout();
+        else setModalError(error.message || "Could not rename the notebook. Try again.");
+      } finally {
+        modalBusyRef.current = false;
+        setModalBusy(false);
+      }
       return;
     }
     if (modal.mode === "notebook") {
@@ -429,6 +465,36 @@ export default function Ide() {
   }
 
   runRef.current = runCurrentFile;
+
+  async function openVisualizer(includeSource = false) {
+    const file = activeFile();
+    const code = includeSource && file ? (editorRef.current ? editorRef.current.getValue() : file.content) : "";
+    if (includeSource && (!file || !/\.(?:js|mjs|cjs)$/i.test(file.name))) {
+      showToast(file ? "Only JavaScript files can be visualized." : "Open a JavaScript file first.");
+      return;
+    }
+    if (includeSource && code.length > 30_000) {
+      showToast("The visualizer supports code up to 30,000 characters.");
+      return;
+    }
+    try {
+      sessionStorage.removeItem("myide.visualizer.source");
+      if (includeSource) sessionStorage.setItem("myide.visualizer.source", code);
+    } catch {
+      showToast("Could not pass the current code to the visualizer. Check browser storage and try again.");
+      return;
+    }
+    if (!await persist(currentRef.current)) {
+      try {
+        sessionStorage.removeItem("myide.visualizer.source");
+      } catch {
+        /* ignore */
+      }
+      showToast("Could not save your notebook. Visualizer navigation was cancelled.");
+      return;
+    }
+    window.location.assign("/visualizer");
+  }
 
   function stopCurrentRun() {
     if (!runnerRef.current?.stop()) return;
@@ -505,6 +571,7 @@ export default function Ide() {
         return;
       }
       if (event.key === "Escape") {
+        if (modalBusyRef.current) return;
         setMenuOpen(false);
         setModal(null);
         setSidebarOpen(false);
@@ -553,9 +620,9 @@ export default function Ide() {
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_1fr] bg-deep text-white md:grid-cols-[min(260px,32vw)_1fr]">
-      <header className="col-span-full flex flex-col border-b border-cyan/20 bg-darker pt-[env(safe-area-inset-top)]">
-        <div className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-2 py-1.5 md:min-h-[58px] md:gap-4 md:px-4">
+    <div className="ide-workspace grid h-full min-h-0 grid-cols-1 grid-rows-[auto_1fr] bg-deep text-white md:grid-cols-[min(272px,30vw)_1fr]">
+      <header ref={headerRef} className="ide-header col-span-full flex flex-col border-b border-cyan/20 bg-darker pt-[env(safe-area-inset-top)]">
+        <div className="ide-toolbar flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-2 py-1.5 md:min-h-[58px] md:gap-4 md:px-4">
           <button
             type="button"
             className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-cyan/20 text-lg md:hidden"
@@ -564,8 +631,19 @@ export default function Ide() {
           >
             ☰
           </button>
+          <div className="ide-brands">
           <Brand />
-          <div className="relative shrink-0">
+          <button
+            type="button"
+            title="Open the standalone code visualizer"
+            aria-label="Open the standalone code visualizer"
+            className="ide-visualizer-link group inline-flex shrink-0 items-center gap-2 rounded-lg text-left text-white md:gap-2.5"
+            onClick={() => openVisualizer(false)}
+          >
+            <VisualizerBrand />
+          </button>
+          </div>
+          <div className="ide-file-menu relative shrink-0">
             <button type="button" className={`rounded-md px-2 py-1.5 text-sm md:px-3 ${menuOpen ? "bg-cyan/15 text-cyan" : "hover:bg-cyan/10"}`} onClick={() => setMenuOpen((v) => !v)}>
               File
             </button>
@@ -581,15 +659,16 @@ export default function Ide() {
               </div>
             ) : null}
           </div>
-          <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
+          <div className="ide-notebook-title hidden min-w-0 flex-1 items-center gap-3 md:flex">
             <input
               className="w-full max-w-md bg-transparent text-base font-semibold outline-none border-b border-transparent focus:border-cyan"
               value={current.name}
+              aria-label="Notebook name"
               onChange={(e) => patchCurrent((nb) => ({ ...nb, name: e.target.value }))}
             />
-            <span className={`text-xs ${saveState === "Saved" ? "text-lime" : "text-yellow"}`}>{saveState}</span>
+            <span className={`ide-save-status text-xs ${saveState === "Saved" ? "text-lime" : "text-yellow"}`}>{saveState}</span>
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
+          <div className="ide-header-actions ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
             <button type="button" className="hidden rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-cyan md:inline" onClick={() => openModal({ mode: "notebook", title: "New notebook", copy: "A new notebook starts empty.", ok: "Create", value: "Untitled notebook" })}>
               New notebook
             </button>
@@ -598,9 +677,10 @@ export default function Ide() {
               type="button"
               className="rounded-lg border border-cyan/20 px-3 py-2 text-sm font-semibold hover:border-cyan hover:text-cyan"
               onClick={formatCurrentFile}
-              title="Organize code"
+              title="Format code"
+              aria-label="Format code"
             >
-              O
+              <ExplorerIcon name="format" size={17} />
             </button>
             <div className="inline-flex overflow-hidden rounded-lg border border-cyan/20">
               <button
@@ -634,6 +714,14 @@ export default function Ide() {
               {isRunning ? "Stop" : "Run"}
               <span className="hidden text-[10px] font-medium opacity-70 lg:inline">{isRunning ? "Ctrl+C" : "Ctrl+Enter"}</span>
             </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg border border-cyan/25 px-3 py-2 text-sm font-semibold text-cyan transition hover:border-cyan hover:bg-cyan/10"
+              onClick={() => openVisualizer(true)}
+              title="Visualize the current JavaScript file"
+            >
+              Visualize
+            </button>
             <button type="button" className="hidden rounded-lg border border-cyan/20 px-3 py-2 text-sm hover:border-pink hover:text-pink md:inline" onClick={logout}>
               Log out
             </button>
@@ -659,47 +747,20 @@ export default function Ide() {
       </header>
 
       <div className="max-md:pointer-events-none max-md:col-start-1 max-md:row-start-1 max-md:h-0 max-md:w-0 max-md:overflow-visible md:contents">
-      <aside className={`pointer-events-auto flex h-full min-h-0 flex-col border-r border-cyan/20 bg-deep max-md:fixed max-md:bottom-0 max-md:left-0 max-md:top-[calc(env(safe-area-inset-top)+5.25rem)] max-md:z-30 max-md:w-[min(18rem,88vw)] max-md:shadow-glow max-md:transition-transform max-md:duration-200 ${sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"} pb-[env(safe-area-inset-bottom)] md:relative md:w-auto md:translate-x-0 md:shadow-none`}>
-        <section className="p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Notebooks</h2>
-            <button type="button" className="h-8 w-8 rounded border border-cyan/20 text-lg hover:border-cyan hover:text-cyan" onClick={() => openModal({ mode: "notebook", title: "New notebook", copy: "A new notebook starts empty.", ok: "Create", value: "Untitled notebook" })}>+</button>
-          </div>
-          <ul>
-            {notebooks.map((nb) => (
-              <li key={nb._id}>
-                <SideItem
-                  active={nb._id === current._id}
-                  label={nb.name}
-                  meta={nb.fileCount ?? nb.files?.length ?? 0}
-                  onClick={() => switchNotebook(nb._id)}
-                  onDelete={() => openModal({ mode: "delete-notebook", title: "Delete notebook?", copy: `Delete “${nb.name}” and every file inside it? This cannot be undone.`, ok: "Delete", danger: true, notebookId: nb._id })}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section className="flex min-h-0 flex-1 flex-col p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Files</h2>
-            <div className="flex gap-1">
-              <button type="button" className="h-8 rounded border border-cyan/20 px-2 text-xs hover:border-cyan hover:text-cyan" onClick={() => fileInputRef.current?.click()}>Open</button>
-              <button type="button" className="h-8 w-8 rounded border border-cyan/20 text-lg hover:border-cyan hover:text-cyan" onClick={() => openModal({ mode: "file", title: "New file", copy: "This file will open in a tab.", ok: "Create", value: uniqueFileName(notebookFiles, "untitled.js") })}>+</button>
-            </div>
-          </div>
-          <ul className="flex-1 overflow-auto">
-            {notebookFiles.map((item) => (
-              <li key={item.id}>
-                <SideItem
-                  active={item.id === current.activeFileId}
-                  label={item.name}
-                  onClick={() => openFile(item.id)}
-                  onDelete={() => openModal({ mode: "delete-file", title: "Delete file?", copy: `Delete “${item.name}”? This cannot be undone.`, ok: "Delete", danger: true, fileId: item.id })}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+      <aside aria-label="Notebook and file explorer" className={`ide-sidebar pointer-events-auto flex h-full min-h-0 flex-col border-r border-cyan/20 bg-deep max-md:fixed max-md:bottom-0 max-md:left-0 max-md:top-[calc(env(safe-area-inset-top)+5.25rem)] max-md:z-30 max-md:w-[min(18rem,88vw)] max-md:shadow-glow max-md:transition-transform max-md:duration-200 ${sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"} pb-[env(safe-area-inset-bottom)] md:relative md:w-auto md:translate-x-0 md:shadow-none`}>
+        <ExplorerSidebar
+          notebooks={notebooks}
+          current={current}
+          onSelectNotebook={switchNotebook}
+          onSelectFile={openFile}
+          onOpenFiles={() => fileInputRef.current?.click()}
+          onNewNotebook={() => openModal({ mode: "notebook", title: "New notebook", copy: "A new notebook starts empty.", ok: "Create", value: "Untitled notebook" })}
+          onNewFile={() => openModal({ mode: "file", title: "New file", copy: "This file will open in a tab.", ok: "Create", value: uniqueFileName(notebookFiles, "untitled.js") })}
+          onDeleteNotebook={(notebook) => openModal({ mode: "delete-notebook", title: "Delete notebook?", copy: `Delete “${notebook.name}” and every file inside it? This cannot be undone.`, ok: "Delete", danger: true, notebookId: notebook._id })}
+          onDeleteFile={(item) => openModal({ mode: "delete-file", title: "Delete file?", copy: `Delete “${item.name}”? This cannot be undone.`, ok: "Delete", danger: true, fileId: item.id })}
+          onRenameNotebook={(notebook) => openModal({ mode: "rename-notebook", title: "Rename notebook", copy: "Choose a new name for this notebook.", ok: "Rename", value: notebook.name, notebookId: notebook._id })}
+          onRenameFile={(item) => openModal({ mode: "rename", title: "Rename file", copy: "The file stays open; only the name changes.", ok: "Rename", value: item.name, fileId: item.id })}
+        />
       </aside>
       </div>
 
@@ -738,7 +799,7 @@ export default function Ide() {
               height="100%"
               theme="jellyfish"
               language={languageFor(file.name)}
-              path={`${current._id}/${file.id}/${file.name}`}
+              path={`${current._id}/${file.id}`}
               defaultValue={file.content}
               loading={<div className="h-full w-full bg-panel" />}
               beforeMount={(monacoInstance) => {
@@ -927,24 +988,27 @@ export default function Ide() {
       />
 
       {modal ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-deep/70 p-0 sm:place-items-center sm:p-4" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
-          <div className={`w-full rounded-t-2xl border bg-widget p-5 shadow-glow sm:w-[min(420px,calc(100%-32px))] sm:rounded-2xl ${modal.danger ? "border-danger/50" : "border-cyan/20"} pb-[max(1.25rem,env(safe-area-inset-bottom))]`}>
-            <h3 className="mb-1 text-lg font-semibold">{modal.title}</h3>
+        <div className="fixed inset-0 z-50 grid place-items-end bg-deep/70 p-0 sm:place-items-center sm:p-4" onClick={(e) => e.target === e.currentTarget && !modalBusyRef.current && setModal(null)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="ide-modal-title" aria-busy={modalBusy} className={`w-full rounded-t-2xl border bg-widget p-5 shadow-glow sm:w-[min(420px,calc(100%-32px))] sm:rounded-2xl ${modal.danger ? "border-danger/50" : "border-cyan/20"} pb-[max(1.25rem,env(safe-area-inset-bottom))]`}>
+            <h3 id="ide-modal-title" className="mb-1 text-lg font-semibold">{modal.title}</h3>
             <p className="mb-4 text-sm text-muted">{modal.copy}</p>
             {modal.danger ? null : (
               <input
                 autoFocus
+                disabled={modalBusy}
+                aria-label={modal.title}
+                onFocus={(event) => event.target.select()}
                 className="w-full rounded-lg border border-cyan/20 bg-overlay px-3 py-2 font-mono outline-none focus:border-cyan"
                 value={modalValue}
                 onChange={(e) => setModalValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && confirmModal()}
               />
             )}
-            {modalError ? <p className="mt-2 text-sm text-danger">{modalError}</p> : null}
+            {modalError ? <p role="alert" className="mt-2 text-sm text-danger">{modalError}</p> : null}
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-cyan/20 px-3 py-2 text-sm" onClick={() => setModal(null)}>Cancel</button>
-              <button type="button" className={`rounded-lg px-3 py-2 text-sm font-semibold ${modal.danger ? "bg-danger text-white" : "bg-lime text-deep"}`} onClick={confirmModal}>
-                {modal.ok}
+              <button type="button" disabled={modalBusy} className="rounded-lg border border-cyan/20 px-3 py-2 text-sm disabled:opacity-50" onClick={() => setModal(null)}>Cancel</button>
+              <button type="button" disabled={modalBusy} className={`rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50 ${modal.danger ? "bg-danger text-white" : "bg-lime text-deep"}`} onClick={confirmModal}>
+                {modalBusy ? "Saving…" : modal.ok}
               </button>
             </div>
           </div>
@@ -965,20 +1029,3 @@ function MenuItem({ label, kbd, onClick }) {
   );
 }
 
-function SideItem({ active, label, meta, onClick, onDelete }) {
-  return (
-    <button type="button" className={`mb-1 flex min-h-11 w-full items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-sm ${active ? "bg-cyan/15 text-cyan" : "hover:bg-widget"}`} onClick={onClick}>
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      {meta != null ? <span className="text-[11px] text-muted">{meta}</span> : null}
-      <span
-        className="grid h-8 w-8 shrink-0 place-items-center text-muted hover:text-danger"
-        onClick={(event) => {
-          event.stopPropagation();
-          onDelete();
-        }}
-      >
-        ×
-      </span>
-    </button>
-  );
-}

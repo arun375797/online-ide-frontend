@@ -48,6 +48,31 @@ body {
 .monaco-editor .bracket-highlighting-4 { color: #ff7e34 !important; }
 .monaco-editor .bracket-highlighting-5 { color: #ff0062 !important; }
 
+.visualizer-active-line {
+  background: rgba(0, 255, 255, 0.13) !important;
+  border-left: 2px solid #00ffff;
+}
+
+.visualizer-active-glyph::before {
+  color: #00ffff;
+  content: "▶";
+  font-size: 10px;
+  left: 3px;
+  position: absolute;
+  top: 2px;
+}
+
+.visualizer-breakpoint-glyph::before {
+  background: #ff0062;
+  border-radius: 50%;
+  content: "";
+  height: 8px;
+  left: 5px;
+  position: absolute;
+  top: 5px;
+  width: 8px;
+}
+
 .monaco-editor .core-guide,
 .monaco-editor .cslr[class*="bracket-highlighting"],
 .monaco-editor span[class*="bracket-highlighting"] {

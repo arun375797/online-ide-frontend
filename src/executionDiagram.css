@@ -1,0 +1,504 @@
+.viz-workspace {
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+}
+.viz-example-select {
+  min-width: 0;
+  max-width: 180px;
+  font-size: 11px;
+  padding: 5px 7px;
+  border: 1px solid #414c63;
+  border-radius: 6px;
+  color: #bccbff;
+  background: #262f42;
+}
+.viz-function-diagram {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #343e52;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #1a202d;
+}
+.viz-function-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  color: #a9b9d3;
+  font-size: 10px;
+}
+.viz-function-heading strong {
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: #33425b;
+  border-radius: 4px;
+  color: #d2dfff;
+}
+.viz-function-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  font-family: Consolas, monospace;
+}
+.viz-frame-card {
+  fill: #222c3d;
+  stroke: #51617e;
+  stroke-width: 1.5;
+}
+.viz-frame-card.is-active {
+  stroke: #8ac196;
+}
+.viz-frame-name {
+  fill: #dce7fa;
+  font-size: 17px;
+  font-weight: 600;
+}
+.viz-frame-label {
+  fill: #a1b2d0;
+  font-size: 11px;
+}
+.viz-frame-rule {
+  stroke: #41516c;
+  fill: none;
+}
+.viz-frame-variable {
+  fill: #b7caf6;
+  font-size: 14px;
+}
+.viz-frame-arrow {
+  fill: #9caed0;
+  font-size: 18px;
+}
+.viz-frame-value-box {
+  fill: #2f3d55;
+  stroke: #657b9e;
+  transition: fill 0.25s;
+}
+.viz-frame-value-box.is-changed {
+  fill: #355a43;
+  stroke: #9aceac;
+}
+.viz-frame-value {
+  fill: #e0eafb;
+  font-size: 14px;
+}
+.viz-frame-connection {
+  fill: none;
+  stroke: #90addb;
+  stroke-width: 2;
+}
+.viz-step-error {
+  color: #ffb9c6;
+}
+.viz-canvas-layout {
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 10px 12px;
+  gap: 7px;
+}
+.viz-stage-variables {
+  height: 54px;
+  min-height: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+}
+.viz-stage-variables > .viz-muted {
+  align-self: center;
+  font-size: 10px;
+}
+.viz-scalar-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  height: 100%;
+  border: 1px solid #414d64;
+  background: #283147;
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+.viz-scalar-chip code {
+  color: #b4c4fa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.viz-scalar-chip > span {
+  color: #8394b7;
+}
+.viz-scalar-chip strong {
+  font:
+    13px Consolas,
+    monospace;
+  color: #e0e9fa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.viz-scalar-chip.is-changed {
+  background: #304a3b;
+  border-color: #83ba8e;
+}
+.viz-execution-diagram {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #1a202d;
+  border: 1px solid #343e52;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.viz-diagram-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 13px;
+  font-size: 9px;
+  color: #b0bdd4;
+  flex-shrink: 0;
+}
+.viz-diagram-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.viz-diagram-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+.viz-diagram-legend i.is-read {
+  background: #85b8f6;
+}
+.viz-diagram-legend i.is-written {
+  background: #8fce9a;
+}
+.viz-diagram-legend i.is-cursor {
+  border: 1px solid #b9a4ff;
+}
+.viz-diagram-legend .viz-diagram-hint {
+  margin-left: auto;
+  color: #8997af;
+  font-size: 8px;
+}
+.viz-diagram-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  font-family: Consolas, "Courier New", monospace;
+  overflow: visible;
+}
+.viz-matrix-frame {
+  fill: #202838;
+  stroke: #495670;
+  stroke-dasharray: 5 5;
+}
+.viz-matrix-name {
+  fill: #d1dcf6;
+  font-size: 17px;
+  font-weight: 600;
+}
+.viz-matrix-dimensions {
+  fill: #9baac3;
+  font-size: 11px;
+}
+.viz-matrix-index {
+  fill: #a5b4cf;
+  font-size: 12px;
+}
+.viz-matrix-cell rect {
+  fill: #2b3549;
+  stroke: #62708a;
+  transition:
+    fill 0.25s,
+    stroke 0.25s;
+}
+.viz-matrix-cell text {
+  fill: #e5ecfa;
+  font-size: 16px;
+  pointer-events: none;
+  animation: viz-value-appear 0.3s ease-out;
+}
+.viz-matrix-cell.is-pending rect {
+  fill: #1e2635;
+  stroke: #4d5b72;
+  stroke-dasharray: 3 4;
+}
+.viz-matrix-cell.is-pending text {
+  fill: #65738c;
+}
+.viz-matrix-cell.is-read rect {
+  fill: #294d76;
+  stroke: #8fbff8;
+  stroke-width: 2;
+}
+.viz-matrix-cell.is-written rect,
+.viz-matrix-cell.is-changed rect {
+  fill: #335d40;
+  stroke: #9bd5a7;
+  stroke-width: 2;
+}
+.viz-matrix-cursor {
+  fill: none;
+  stroke: #b7a1ff;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+  transition:
+    x 0.32s ease,
+    y 0.32s ease;
+}
+.viz-value-transfer {
+  fill: none;
+  stroke: #92baf0;
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+  opacity: 0.8;
+  pointer-events: none;
+  animation: viz-transfer-flow 1.2s linear infinite;
+}
+.viz-execution-diagram:not(.is-playing) .viz-value-transfer {
+  animation-play-state: paused;
+}
+.viz-diagram-calculation rect {
+  fill: #2e3c54;
+  stroke: #5a729a;
+}
+.viz-diagram-calculation text {
+  fill: #dce9ff;
+  font-size: 15px;
+}
+.viz-diagram-calculation {
+  animation: viz-calculation-appear 0.25s ease-out;
+}
+.viz-diagram-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px 12px;
+  min-height: 20px;
+  flex-shrink: 0;
+  font-size: 9px;
+  color: #acbbd6;
+}
+.viz-diagram-navigation > span {
+  margin-right: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.viz-diagram-navigation > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.viz-diagram-navigation button {
+  min-width: 23px;
+  height: 19px;
+  background: #303d56;
+  border: 1px solid #536586;
+  border-radius: 4px;
+  color: #d1dfff;
+}
+.viz-diagram-navigation button:hover:enabled {
+  background: #465c7d;
+}
+.viz-diagram-empty {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 12px 20px;
+  background: #1a202d;
+  border: 1px solid #343e52;
+  border-radius: 8px;
+}
+.viz-diagram-empty svg {
+  width: 180px;
+  max-height: 90px;
+  flex-shrink: 1;
+  min-height: 0;
+}
+.viz-diagram-empty h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d4def1;
+  margin: 8px 0;
+}
+.viz-diagram-empty p {
+  max-width: 340px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #9eacc6;
+}
+.viz-empty-calculation {
+  margin-top: 12px;
+  padding: 8px 15px;
+  background: #2e3c54;
+  border-radius: 6px;
+  color: #dce9ff;
+}
+.viz-stage-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 6px 9px;
+  background: #252f43;
+  border-radius: 5px;
+}
+.viz-context-result {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  color: #a6b5d2;
+}
+.viz-context-result.is-true {
+  color: #9ed5ad;
+}
+.viz-context-result.is-false {
+  color: #edb494;
+}
+.viz-stage-context > code {
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #b9c9e6;
+}
+.viz-stage-output {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 78px;
+  padding: 6px 9px;
+  border: 1px solid #343e52;
+  border-radius: 5px;
+}
+.viz-stage-output:has(> .viz-muted) {
+  height: 50px;
+}
+.viz-stage-output .viz-section-heading {
+  min-height: 12px;
+  margin-bottom: 3px;
+}
+.viz-stage-output .viz-section-heading h3 {
+  font-size: 10px;
+}
+.viz-stage-output .viz-fit-pagination {
+  height: 16px;
+}
+.viz-stage-output .viz-live-output {
+  padding: 0;
+  background: transparent;
+}
+@keyframes viz-transfer-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes viz-value-appear {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes viz-calculation-appear {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 1100px) and (min-width: 761px) {
+  .viz-workspace {
+    grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr);
+  }
+}
+@media (max-height: 700px) {
+  .viz-stage-variables {
+    height: 45px;
+  }
+  .viz-canvas-layout {
+    gap: 5px;
+    padding: 6px 8px;
+  }
+  .viz-stage-output {
+    height: 71px;
+  }
+  .viz-diagram-legend .viz-diagram-hint {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .viz-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .viz-canvas-layout {
+    padding: 5px;
+    gap: 4px;
+  }
+  .viz-stage-variables {
+    height: 45px;
+  }
+  .viz-diagram-legend {
+    font-size: 8px;
+    gap: 5px 9px;
+  }
+  .viz-diagram-legend .viz-diagram-hint {
+    display: none;
+  }
+  .viz-stage-output {
+    height: 67px;
+    padding: 3px 6px;
+  }
+  .viz-stage-output:has(> .viz-muted) {
+    height: 37px;
+  }
+  .viz-stage-context {
+    padding: 3px 6px;
+  }
+  .viz-diagram-empty h3 {
+    font-size: 12px;
+  }
+  .viz-diagram-empty p {
+    font-size: 10px;
+  }
+  .viz-example-select {
+    max-width: 145px;
+    padding: 2px 4px;
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-matrix-cell text,
+  .viz-value-transfer,
+  .viz-diagram-calculation {
+    animation: none;
+  }
+  .viz-matrix-cursor,
+  .viz-matrix-cell rect {
+    transition: none;
+  }
+}

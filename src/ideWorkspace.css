@@ -1,0 +1,436 @@
+.ide-header {
+  background: #0b0c23;
+  border-color: #ffffff0f;
+}
+.ide-toolbar {
+  min-height: 64px;
+  column-gap: 14px;
+  row-gap: 8px;
+  padding-block: 10px;
+}
+.ide-brands {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 16px;
+}
+.ide-brands > div {
+  min-width: 0;
+}
+.ide-brands img {
+  box-shadow: 0 0 14px #00ffff20;
+}
+.ide-visualizer-link {
+  border-left: 1px solid #ffffff12;
+  padding-left: 16px;
+}
+.ide-brands .visualizer-brand-icon {
+  background: #081b2b;
+  border-color: #2c7e8b80;
+}
+.ide-file-menu > button {
+  font-size: 12px;
+  color: #b6c3d8;
+}
+.ide-notebook-title {
+  gap: 9px;
+}
+.ide-notebook-title input {
+  min-width: 0;
+  max-width: 190px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #d1dbea;
+}
+.ide-save-status {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.ide-save-status.text-lime {
+  color: #84b9a5;
+}
+.ide-save-status::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 2px;
+}
+.ide-header-actions {
+  gap: 6px;
+}
+.ide-header-actions > button,
+.ide-header-actions > div {
+  min-height: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+.ide-header-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.ide-header-actions > button.hidden {
+  display: none;
+}
+.ide-header-actions > button:not(.bg-lime):not(.bg-danger) {
+  color: #bdc9dc;
+  border-color: #62718a40;
+}
+.ide-header-actions > div {
+  border-color: #62718a40;
+}
+.ide-header-actions > div > button {
+  padding-block: 4px;
+}
+.ide-header-actions > button[title="Visualize the current JavaScript file"] {
+  color: #8bdde5;
+  background: #0b2636;
+  border-color: #2b5d6d;
+}
+.ide-header-actions > button:last-child {
+  color: #8b9bb5;
+  border-color: transparent;
+}
+.ide-sidebar {
+  background: #080c22;
+  border-color: #ffffff0e;
+}
+.ide-explorer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 3px;
+  color: #c9d4e5;
+}
+.ide-explorer button {
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+}
+.ide-explorer button:focus-visible {
+  outline: 2px solid #68cbd8;
+  outline-offset: -2px;
+}
+.ide-explorer-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px 8px 12px;
+}
+.ide-notebooks-section {
+  flex: 0 1 auto;
+  max-height: 42%;
+  min-height: 108px;
+}
+.ide-files-section {
+  flex: 1;
+  border-top: 1px solid #ffffff0c;
+  padding-top: 10px;
+}
+.ide-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 0 4px 0 8px;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ide-section-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: #93a2bb;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+.ide-section-heading h2 > span {
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #ffffff06;
+  color: #7f91ac;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.ide-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.ide-explorer-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 6px;
+  min-width: 27px;
+  height: 27px;
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #91a5bf;
+}
+.ide-explorer-action:hover {
+  background: #ffffff08;
+  color: #bdedf3;
+  border-color: #66799535;
+}
+.ide-open-files {
+  font-size: 10px;
+  padding-inline: 7px;
+}
+.ide-explorer-list {
+  min-height: 0;
+  margin: 0;
+  padding: 1px 0;
+  list-style: none;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3d4d68 transparent;
+  overscroll-behavior: contain;
+}
+.ide-files-section > .ide-explorer-list {
+  flex: 0 1 auto;
+}
+.ide-explorer-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 36px;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+.ide-explorer-row:hover {
+  background: #ffffff05;
+}
+.ide-explorer-row.is-active {
+  background: #102c40;
+  box-shadow: inset 2px 0 #4cc5d5;
+}
+.ide-explorer-row.is-active:hover {
+  background: #153449;
+}
+.ide-explorer-open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  align-self: stretch;
+  padding: 7px 4px 7px 10px;
+  text-align: left;
+  border-radius: 4px;
+}
+.ide-explorer-open > svg {
+  flex-shrink: 0;
+  color: #7f95b4;
+}
+.ide-explorer-row.is-active .ide-explorer-open > svg {
+  color: #7bd1df;
+}
+.ide-explorer-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #bdcadf;
+}
+.ide-explorer-row.is-active .ide-explorer-label {
+  color: #c7eef5;
+  font-weight: 500;
+}
+.ide-explorer-count {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 21px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff05;
+  color: #7f96b1;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.ide-row-delete,
+.ide-row-rename {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 25px;
+  height: 26px;
+  margin-right: 4px;
+  border-radius: 4px;
+  color: #8294ad;
+  opacity: 0;
+}
+.ide-explorer-row:hover .ide-row-delete,
+.ide-explorer-row:focus-within .ide-row-delete,
+.ide-explorer-row:hover .ide-row-rename,
+.ide-explorer-row:focus-within .ide-row-rename {
+  opacity: 1;
+}
+.ide-row-delete:hover {
+  color: #f59bb0;
+  background: #a7425b25;
+}
+.ide-row-rename {
+  margin-right: 0;
+}
+.ide-row-rename:hover {
+  color: #93dce6;
+  background: #28596940;
+}
+.ide-file-badge {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  color: #99acc7;
+  font:
+    600 9px/16px Consolas,
+    monospace;
+}
+.ide-file-javascript {
+  color: #d2b97a;
+}
+.ide-file-json {
+  color: #7eafcb;
+}
+.ide-file-css {
+  color: #b49ed6;
+}
+.ide-file-html {
+  color: #d39d85;
+}
+.ide-file-context {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 9px 9px;
+  color: #6f88a7;
+  font-size: 10px;
+}
+.ide-file-context svg {
+  flex-shrink: 0;
+}
+.ide-file-context > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ide-explorer-empty {
+  padding: 30px 12px;
+  text-align: center;
+  color: #6e84a4;
+}
+.ide-explorer-empty > svg {
+  margin: 0 auto 12px;
+}
+.ide-explorer-empty p {
+  font-size: 11px;
+  margin-bottom: 9px;
+}
+.ide-explorer-empty button {
+  font-size: 11px;
+  color: #7ac9d6;
+}
+@media (min-width: 768px) {
+  .ide-header-actions > button.hidden {
+    display: inline-flex;
+  }
+}
+@media (min-width: 768px) and (max-width: 1199px) {
+  .ide-toolbar {
+    display: grid;
+    grid-template-columns: auto auto minmax(100px, 1fr);
+  }
+  .ide-header-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: flex-end;
+    border-top: 1px solid #ffffff09;
+    padding-top: 8px;
+  }
+}
+@media (max-width: 767px) {
+  .ide-toolbar {
+    padding-block: 8px;
+    gap: 8px;
+  }
+  .ide-brands {
+    gap: 10px;
+  }
+  .ide-visualizer-link {
+    padding-left: 10px;
+  }
+  .ide-brands .visualizer-brand-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .ide-header-actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+  .ide-header-actions > button {
+    padding-inline: 10px;
+  }
+  .ide-sidebar {
+    top: var(--ide-header-height, 140px);
+    height: auto;
+  }
+}
+@media (max-width: 380px) {
+  .ide-brands {
+    gap: 7px;
+  }
+  .ide-visualizer-link {
+    padding-left: 7px;
+  }
+  .ide-brands .visualizer-brand-icon {
+    display: none;
+  }
+}
+@media (hover: none) {
+  .ide-row-delete,
+  .ide-row-rename {
+    opacity: 1;
+    width: 34px;
+    height: 36px;
+  }
+  .ide-explorer-row {
+    min-height: 44px;
+  }
+  .ide-explorer-action {
+    min-width: 34px;
+    height: 34px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ide-explorer button {
+    transition: none;
+  }
+}

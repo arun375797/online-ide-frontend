@@ -5,12 +5,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:workspace": "node --test src/lib/notebookFiles.test.js",
+    "test:visualizer": "node --test src/lib/visualizer.test.js src/lib/nativeVisualizer.test.js src/lib/executionLesson.test.js src/lib/executionHistory.test.js src/lib/memoryGraph.test.js src/lib/savedVisualizerPrograms.test.js"
   },
   "dependencies": {
+    "@jitl/quickjs-singlefile-browser-release-sync": "^0.32.0",
     "@monaco-editor/react": "^4.6.0",
     "acorn": "^8.18.0",
+    "magic-string": "^1.4.5",
     "prettier": "^3.9.7",
+    "quickjs-emscripten-core": "^0.32.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
