@@ -2,6 +2,24 @@
   background: #0b0c23;
   border-color: #ffffff0f;
 }
+.ide-tabs-scroll {
+  scrollbar-color: #267985 #090b22;
+  scrollbar-width: thin;
+}
+.ide-tabs-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.ide-tabs-scroll::-webkit-scrollbar-track {
+  background: #090b22;
+}
+.ide-tabs-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid #090b22;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #176b7a, #00aeb9);
+}
+.ide-tabs-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #1d9aab, #00e5ee);
+}
 .ide-toolbar {
   min-height: 64px;
   column-gap: 14px;

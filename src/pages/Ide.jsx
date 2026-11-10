@@ -766,7 +766,7 @@ export default function Ide() {
 
       <main className="flex min-h-0 min-w-0 flex-col bg-panel">
         <div className="flex min-h-10 items-stretch border-b border-cyan/20 bg-deep">
-          <div className="flex flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+          <div className="ide-tabs-scroll flex flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch]">
             {openTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -1028,4 +1028,3 @@ function MenuItem({ label, kbd, onClick }) {
     </button>
   );
 }
-
